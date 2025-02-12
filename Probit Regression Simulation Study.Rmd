@@ -4,6 +4,7 @@ author: "Laurens Bogaardt"
 date: "2023-06-08"
 output:
   html_document:
+    keep_md: true
     df_print: paged
     fig_width: 10
     fig.align: center

@@ -4,6 +4,7 @@ author: "Laurens Bogaardt"
 date: "2023-06-07"
 output:
   html_document:
+    keep_md: true
     df_print: paged
     fig_width: 10
     fig.align: center
@@ -190,15 +191,19 @@ The _ABC_ ...
 
 The document [_Linear Regression Simulation Study.Rmd_](Linear Regression Simulation Study.Rmd) is knitted to the file [_Linear-Regression-Simulation-Study.html_](Linear-Regression-Simulation-Study.html).
 
-```{r results = FALSE, message = FALSE, warning = FALSE}
-Rscript_call(
-  fun = render,
-  args = list(
-    input = "Linear Regression Simulation Study.Rmd",
-    output_dir = ".",
-    intermediates_dir = "."
+```{r, message = FALSE, warning = FALSE}
+system.time(
+  Rscript_call(
+    fun = render,
+    args = list(
+      input = "Linear Regression Simulation Study.Rmd",
+      output_format = "all",
+      output_dir = ".",
+      intermediates_dir = "."
+    )
   )
 )
+Rscript_call <- function(fun, args) {} # Temporary trick to disable knitting.
 ```
 
 # Mixed Effects Models 
@@ -209,13 +214,49 @@ The _ABC_ ...
 
 The document [_Mixed Effects Model Simulation Study.Rmd_](Mixed Effects Model Simulation Study.Rmd) is knitted to the file [_Mixed-Effects-Model-Simulation-Study.html_](Mixed-Effects-Model-Simulation-Study.html).
 
-```{r results = FALSE, message = FALSE, warning = FALSE}
-Rscript_call(
-  fun = render,
-  args = list(
-    input = "Mixed Effects Model Simulation Study.Rmd",
-    output_dir = ".",
-    intermediates_dir = "."
+```{r, message = FALSE, warning = FALSE}
+system.time(
+  Rscript_call(
+    fun = render,
+    args = list(
+      input = "Mixed Effects Model Simulation Study.Rmd",
+      output_dir = ".",
+      intermediates_dir = "."
+    )
+  )
+)
+```
+
+## B-Spline Mixed Effects Model Simulation Study.Rmd
+
+The document [_B-Spline Mixed Effects Model Simulation Study.Rmd_](B-Spline Mixed Effects Model Simulation Study.Rmd) is knitted to the file [_B-Spline-Mixed-Effects-Model-Simulation-Study.html_](B-Spline-Mixed-Effects-Model-Simulation-Study.html).
+
+```{r, message = FALSE, warning = FALSE}
+system.time(
+  Rscript_call(
+    fun = render,
+    args = list(
+      input = "B-Spline Mixed Effects Model Simulation Study.Rmd",
+      output_dir = ".",
+      intermediates_dir = "."
+    )
+  )
+)
+```
+
+## Multivariate Mixed Effects Model Simulation Study.Rmd
+
+The document [_Multivariate Mixed Effects Model Simulation Study.Rmd_](Multivariate Mixed Effects Model Simulation Study.Rmd) is knitted to the file [_Multivariate-Mixed-Effects-Model-Simulation-Study.html_](Multivariate-Mixed-Effects-Model-Simulation-Study.html).
+
+```{r, message = FALSE, warning = FALSE}
+system.time(
+  Rscript_call(
+    fun = render,
+    args = list(
+      input = "Multivariate Mixed Effects Model Simulation Study.Rmd",
+      output_dir = ".",
+      intermediates_dir = "."
+    )
   )
 )
 ```
@@ -228,13 +269,15 @@ The _DEF_ ...
 
 The document [_Logit Regression Simulation Study.Rmd_](Logit Regression Simulation Study.Rmd) is knitted to the file [_Logit-Regression-Simulation-Study.html_](Logit-Regression-Simulation-Study.html).
 
-```{r results = FALSE, message = FALSE, warning = FALSE}
-Rscript_call(
-  fun = render,
-  args = list(
-    input = "Logit Regression Simulation Study.Rmd",
-    output_dir = ".",
-    intermediates_dir = "."
+```{r, message = FALSE, warning = FALSE}
+system.time(
+  Rscript_call(
+    fun = render,
+    args = list(
+      input = "Logit Regression Simulation Study.Rmd",
+      output_dir = ".",
+      intermediates_dir = "."
+    )
   )
 )
 ```
@@ -243,13 +286,15 @@ Rscript_call(
 
 The document [_Probit Regression Simulation Study.Rmd_](Probit Regression Simulation Study.Rmd) is knitted to the file [_Probit-Regression-Simulation-Study.html_](Probit-Regression-Simulation-Study.html).
 
-```{r results = FALSE, message = FALSE, warning = FALSE}
-Rscript_call(
-  fun = render,
-  args = list(
-    input = "Probit Regression Simulation Study.Rmd",
-    output_dir = ".",
-    intermediates_dir = "."
+```{r, message = FALSE, warning = FALSE}
+system.time(
+  Rscript_call(
+    fun = render,
+    args = list(
+      input = "Probit Regression Simulation Study.Rmd",
+      output_dir = ".",
+      intermediates_dir = "."
+    )
   )
 )
 ```
@@ -258,13 +303,15 @@ Rscript_call(
 
 The document [_Gompit Regression Simulation Study.Rmd_](Gompit Regression Simulation Study.Rmd) is knitted to the file [_Gompit-Regression-Simulation-Study.html_](Gompit-Regression-Simulation-Study.html).
 
-```{r results = FALSE, message = FALSE, warning = FALSE}
-Rscript_call(
-  fun = render,
-  args = list(
-    input = "Gompit Regression Simulation Study.Rmd",
-    output_dir = ".",
-    intermediates_dir = "."
+```{r, message = FALSE, warning = FALSE}
+system.time(
+  Rscript_call(
+    fun = render,
+    args = list(
+      input = "Gompit Regression Simulation Study.Rmd",
+      output_dir = ".",
+      intermediates_dir = "."
+    )
   )
 )
 ```
@@ -277,13 +324,15 @@ The _DEF_ ...
 
 The document [_Ordinal Logit Regression Simulation Study.Rmd_](Ordinal Logit Regression Simulation Study.Rmd) is knitted to the file [_Ordinal-Logit-Regression-Simulation-Study.html_](Ordinal-Logit-Regression-Simulation-Study.html).
 
-```{r results = FALSE, message = FALSE, warning = FALSE}
-Rscript_call(
-  fun = render,
-  args = list(
-    input = "Ordinal Logit Regression Simulation Study.Rmd",
-    output_dir = ".",
-    intermediates_dir = "."
+```{r, message = FALSE, warning = FALSE}
+system.time(
+  Rscript_call(
+    fun = render,
+    args = list(
+      input = "Ordinal Logit Regression Simulation Study.Rmd",
+      output_dir = ".",
+      intermediates_dir = "."
+    )
   )
 )
 ```
@@ -292,13 +341,15 @@ Rscript_call(
 
 The document [_Ordinal Probit Regression Simulation Study.Rmd_](Ordinal Probit Regression Simulation Study.Rmd) is knitted to the file [_Ordinal-Probit-Regression-Simulation-Study.html_](Ordinal-Probit-Regression-Simulation-Study.html).
 
-```{r results = FALSE, message = FALSE, warning = FALSE}
-Rscript_call(
-  fun = render,
-  args = list(
-    input = "Ordinal Probit Regression Simulation Study.Rmd",
-    output_dir = ".",
-    intermediates_dir = "."
+```{r, message = FALSE, warning = FALSE}
+system.time(
+  Rscript_call(
+    fun = render,
+    args = list(
+      input = "Ordinal Probit Regression Simulation Study.Rmd",
+      output_dir = ".",
+      intermediates_dir = "."
+    )
   )
 )
 ```
@@ -307,13 +358,15 @@ Rscript_call(
 
 The document [_Ordinal Gompit Regression Simulation Study.Rmd_](Ordinal Gompit Regression Simulation Study.Rmd) is knitted to the file [_Ordinal-Gompit-Regression-Simulation-Study.html_](Ordinal-Gompit-Regression-Simulation-Study.html).
 
-```{r results = FALSE, message = FALSE, warning = FALSE}
-Rscript_call(
-  fun = render,
-  args = list(
-    input = "Ordinal Gompit Regression Simulation Study.Rmd",
-    output_dir = ".",
-    intermediates_dir = "."
+```{r, message = FALSE, warning = FALSE}
+system.time(
+  Rscript_call(
+    fun = render,
+    args = list(
+      input = "Ordinal Gompit Regression Simulation Study.Rmd",
+      output_dir = ".",
+      intermediates_dir = "."
+    )
   )
 )
 ```
@@ -326,13 +379,15 @@ The _DEF_ ...
 
 The document [_Multinomial Logit Regression Simulation Study.Rmd_](Multinomial Logit Regression Simulation Study.Rmd) is knitted to the file [_Multinomial-Logit-Regression-Simulation-Study.html_](Multinomial-Logit-Regression-Simulation-Study.html).
 
-```{r results = FALSE, message = FALSE, warning = FALSE}
-Rscript_call(
-  fun = render,
-  args = list(
-    input = "Multinomial Logit Regression Simulation Study.Rmd",
-    output_dir = ".",
-    intermediates_dir = "."
+```{r, message = FALSE, warning = FALSE}
+system.time(
+  Rscript_call(
+    fun = render,
+    args = list(
+      input = "Multinomial Logit Regression Simulation Study.Rmd",
+      output_dir = ".",
+      intermediates_dir = "."
+    )
   )
 )
 ```

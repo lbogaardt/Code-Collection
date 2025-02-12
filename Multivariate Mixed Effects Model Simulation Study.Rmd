@@ -1,9 +1,10 @@
 ---
-title: "2D Simulation Study"
+title: "Multivariate Mixed Effects Model Simulation Study"
 author: "Laurens Bogaardt"
 date: "2023-12-21"
 output:
   html_document:
+    keep_md: true
     df_print: paged
     fig_width: 10
     fig.align: center
