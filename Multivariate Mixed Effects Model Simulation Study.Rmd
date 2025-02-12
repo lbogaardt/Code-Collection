@@ -4,7 +4,6 @@ author: "Laurens Bogaardt"
 date: "2023-12-21"
 output:
   html_document:
-    keep_md: true
     df_print: paged
     fig_width: 10
     fig.align: center
@@ -35,11 +34,9 @@ generate.and.estimate.mixed.effects.linear.regression <- function(n.participants
   errors <- rmvnorm(n.participants * n.measurements, c(0, 0), matrix(c(sd.error.1 ^ 2, sd.error.1 * sd.error.2 * within.correlation, sd.error.1 * sd.error.2 * within.correlation, sd.error.2 ^ 2), 2, 2))
   error.1 <- errors[, 1]
   error.2 <- errors[, 2]
-  x <- runif(n.participants * n.measurements)
   y.1 <- fixed.intercept.1 + random.intercept.1 + error.1
   y.2 <- fixed.intercept.2 + random.intercept.2 + error.2
   ys <- c(y.1, y.2)
-  xs <- c(x, x)
   participant.ids <- c(participant.id, participant.id)
   dimension <- c(rep("1", length(participant.id)), rep("2", length(participant.id)))
   measurements.ids <- c(measurements.id, measurements.id)
@@ -69,8 +66,8 @@ generate.and.estimate.mixed.effects.linear.regression <- function(n.participants
 ```{r}
 parameters <- tibble(
   parameter.set = seq(10),
-  n.participants = c(200, 600, 200, 200, 200, 200, 200, 200, 200, 200),
-  n.measurements = c(6, 6, 18, 6, 6, 6, 6, 6, 6, 6),
+  n.participants = c(100, 400, 100, 100, 100, 100, 100, 100, 100, 100),
+  n.measurements = c(5, 5, 15, 5, 5, 5, 5, 5, 5, 5),
   fixed.intercept.1 = c(1, 1, 1, 0.6, 1, 1, 1, 1, 1, 1),
   fixed.intercept.2 = c(0.6, 0.6, 0.6, 4, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6),
   sd.random.intercept.1 = c(0.5, 0.5, 0.5, 0.5, 0.7, 0.5, 0.5, 0.5, 0.5, 0.5),
@@ -88,7 +85,7 @@ parameters
 ```{r}
 estimated.parameters <- parameters %>%
   expand_grid(
-    run = seq(30)
+    run = seq(50)
   ) %>%
   rowwise() %>%
   mutate(
@@ -119,6 +116,7 @@ ggplot() +
   geom_density(
     mapping = aes(
       x = value,
+      y = after_stat(scaled),
       fill = name
     ),
     data = estimated.parameters %>%

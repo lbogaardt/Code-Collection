@@ -4,7 +4,6 @@ author: "Laurens Bogaardt"
 date: "2024-06-26"
 output:
   html_document:
-    keep_md: true
     df_print: paged
     fig_width: 10
     fig.align: center
@@ -293,15 +292,14 @@ The following function combines all previous estimation functions to be able to 
 ```{r}
 estimate.all.models.and.get.coefficients <- function(data) {
   result <- data.frame(
-    method = c("nlme", "lme4", "gamlss1", "gamlss2", "mgcv1", "mgcv2", "optim", "gls"),
+    method = c("nlme", "lme4", "gamlss1", "gamlss2", "mgcv2", "gls"),
     rbind(
       estimate.model.and.get.coefficients.nlme(data),
       estimate.model.and.get.coefficients.lme4(data),
       estimate.model.and.get.coefficients.gamlss1(data),
       estimate.model.and.get.coefficients.gamlss2(data),
-      estimate.model.and.get.coefficients.mgcv1(data),
+      # estimate.model.and.get.coefficients.mgcv1(data),
       estimate.model.and.get.coefficients.mgcv2(data),
-      estimate.model.and.get.coefficients.optim(data),
       estimate.model.and.get.coefficients.gls(data)
       )
     )
@@ -332,7 +330,7 @@ For each set of input parameters, the generation and estimation procedure is app
 ```{r}
 estimated.parameters <- parameters %>%
   expand_grid(
-    run = seq(4)
+    run = seq(10)
   ) %>%
   reframe(
     generate.data(
@@ -456,6 +454,7 @@ ggplot() +
   geom_density(
     mapping = aes(
       x = value,
+      y = after_stat(scaled),
       fill = name
     ),
     data = estimated.parameters %>%

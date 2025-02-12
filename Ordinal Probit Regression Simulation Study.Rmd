@@ -4,7 +4,6 @@ author: "Laurens Bogaardt"
 date: "2023-06-12"
 output:
   html_document:
-    keep_md: true
     df_print: paged
     fig_width: 10
     fig.align: center
@@ -32,9 +31,9 @@ library(ordinal)
 generate.and.estimate.ordinal.probit.regression <- function(n, intercept, slope, threshold) {
   x <- rnorm(n)
   y <- intercept + slope * x + rnorm(n)
-  class <- as.factor(as.numeric(y > 0) + as.numeric(y > threshold) + as.numeric(y > 1))
+  class.membership <- as.factor(as.numeric(y > 0) + as.numeric(y > threshold) + as.numeric(y > 1))
   fit <- clm(
-    formula = class ~ 1 + x,
+    formula = class.membership ~ 1 + x,
     link = "probit"
   )
   result <- data.frame(
@@ -51,7 +50,7 @@ generate.and.estimate.ordinal.probit.regression <- function(n, intercept, slope,
 ```{r}
 parameters <- tibble(
   parameter.set = seq(5),
-  n.data = c(200, 800, 200, 200, 200),
+  n.data = c(1000, 4000, 1000, 1000, 1000),
   intercept = c(1, 1, -1, 1, 1),
   slope = c(2, 2, 2, 0.5, 2),
   threshold = c(0.3, 0.3, 0.3, 0.3, 0.8)
@@ -86,6 +85,7 @@ ggplot() +
   geom_density(
     mapping = aes(
       x = value,
+      y = after_stat(scaled),
       fill = name
     ),
     data = estimated.parameters %>%

@@ -4,7 +4,6 @@ author: "Laurens Bogaardt"
 date: "2023-06-07"
 output:
   html_document:
-    keep_md: true
     df_print: paged
     fig_width: 10
     fig.align: center
@@ -26,7 +25,7 @@ library(xfun)
 library(rmarkdown)
 library(tidyverse)
 library(stringr)
-Rscript_call <- function(fun, args) {} # Temporary trick to disable knitting.
+# Rscript_call <- function(fun, args) {} # Temporary trick to disable knitting.
 ```
 
 # Analyse Pipeline
@@ -203,7 +202,6 @@ system.time(
     )
   )
 )
-Rscript_call <- function(fun, args) {} # Temporary trick to disable knitting.
 ```
 
 # Mixed Effects Models 

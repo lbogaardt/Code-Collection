@@ -4,7 +4,6 @@ author: "Laurens Bogaardt"
 date: "2023-06-08"
 output:
   html_document:
-    keep_md: true
     df_print: paged
     fig_width: 10
     fig.align: center
@@ -122,6 +121,7 @@ ggplot() +
   geom_density(
     mapping = aes(
       x = value,
+      y = after_stat(scaled),
       fill = name
     ),
     data = estimated.parameters %>%

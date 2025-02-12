@@ -4,7 +4,6 @@ author: "Laurens Bogaardt"
 date: "2024-04-01"
 output:
   html_document:
-    keep_md: true
     df_print: paged
     fig_width: 10
     fig.align: center
@@ -326,15 +325,14 @@ The following function combines all previous estimation functions to be able to 
 ```{r}
 estimate.all.models.and.get.coefficients <- function(data) {
   result <- data.frame(
-    method = c("nlme", "lme4", "gamlss1", "gamlss2", "mgcv1", "mgcv2", "optim", "gls"),
+    method = c("nlme", "lme4", "gamlss1", "gamlss2", "mgcv2", "gls"),
     rbind(
       estimate.model.and.get.coefficients.nlme(data),
       estimate.model.and.get.coefficients.lme4(data),
       estimate.model.and.get.coefficients.gamlss1(data),
       estimate.model.and.get.coefficients.gamlss2(data),
-      estimate.model.and.get.coefficients.mgcv1(data),
+      # estimate.model.and.get.coefficients.mgcv1(data),
       estimate.model.and.get.coefficients.mgcv2(data),
-      estimate.model.and.get.coefficients.optim(data),
       estimate.model.and.get.coefficients.gls(data)
     )
   )
@@ -483,32 +481,32 @@ ggplot(
 Let's now compare the methods from _nlme_ and _mgcv1_.
 
 ```{r}
-ggplot(
-  mapping = aes(
-    x = nlme,
-    y = mgcv1
-  ),
-  data = estimated.parameters %>%
-    select(-time) %>%
-    pivot_longer(c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "sd.random.intercept", "sd.error")) %>%
-    pivot_wider(names_from = "method"),
-    alpha = 0.1
-) +
-  geom_point() +
-  geom_smooth(
-    formula = y ~ x,
-    method = "lm",
-    col = "green"
-  ) +
-  geom_abline(
-    intercept = 0,
-    slope = 1
-  ) +
-  facet_grid(
-    cols = vars(name),
-    rows = vars(parameter.set),
-    scales = "free"
-  )
+# ggplot(
+#   mapping = aes(
+#     x = nlme,
+#     y = mgcv1
+#   ),
+#   data = estimated.parameters %>%
+#     select(-time) %>%
+#     pivot_longer(c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "sd.random.intercept", "sd.error")) %>%
+#     pivot_wider(names_from = "method"),
+#     alpha = 0.1
+# ) +
+#   geom_point() +
+#   geom_smooth(
+#     formula = y ~ x,
+#     method = "lm",
+#     col = "green"
+#   ) +
+#   geom_abline(
+#     intercept = 0,
+#     slope = 1
+#   ) +
+#   facet_grid(
+#     cols = vars(name),
+#     rows = vars(parameter.set),
+#     scales = "free"
+#   )
 ```
 
 Let's now compare the methods from _nlme_ and _mgcv2_.
@@ -518,37 +516,6 @@ ggplot(
   mapping = aes(
     x = nlme,
     y = mgcv2
-  ),
-  data = estimated.parameters %>%
-    select(-time) %>%
-    pivot_longer(c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "sd.random.intercept", "sd.error")) %>%
-    pivot_wider(names_from = "method"),
-    alpha = 0.1
-) +
-  geom_point() +
-  geom_smooth(
-    formula = y ~ x,
-    method = "lm",
-    col = "green"
-  ) +
-  geom_abline(
-    intercept = 0,
-    slope = 1
-  ) +
-  facet_grid(
-    cols = vars(name),
-    rows = vars(parameter.set),
-    scales = "free"
-  )
-```
-
-Let's now compare the methods from _nlme_ and _optim_.
-
-```{r}
-ggplot(
-  mapping = aes(
-    x = nlme,
-    y = optim
   ),
   data = estimated.parameters %>%
     select(-time) %>%
@@ -647,7 +614,7 @@ Given that the _lme4_ method was computationally fast, and that is gave the same
 ```{r}
 estimated.parameters <- parameters %>%
   expand_grid(
-    run = seq(100)
+    run = seq(150)
   ) %>%
   reframe(
     generate.data(
@@ -673,6 +640,7 @@ ggplot() +
   geom_density(
     mapping = aes(
       x = value,
+      y = after_stat(scaled),
       fill = name
     ),
     data = estimated.parameters %>%
