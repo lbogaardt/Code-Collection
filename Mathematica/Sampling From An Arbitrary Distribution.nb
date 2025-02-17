@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[     46981,       1117]
-NotebookOptionsPosition[     44659,       1066]
-NotebookOutlinePosition[     45063,       1082]
-CellTagsIndexPosition[     45020,       1079]
+NotebookDataLength[     26300,        680]
+NotebookOptionsPosition[     24620,        643]
+NotebookOutlinePosition[     25040,        660]
+CellTagsIndexPosition[     24997,        657]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -51,8 +51,6 @@ Cell["Inverse CDF Method", "Section",
  CellChangeTimes->{{3.8624071386186895`*^9, 
   3.862407149236843*^9}},ExpressionUUID->"e082f0ef-9423-4879-8fe3-\
 781d31553ff6"],
-
-Cell[CellGroupData[{
 
 Cell[BoxData[
  RowBox[{"DynamicModule", "[", 
@@ -187,93 +185,7 @@ Cell[BoxData[
   3.862374956374632*^9, 3.862375022486397*^9}, {3.8623750580670586`*^9, 
   3.8623750963999324`*^9}, {3.8623752065663595`*^9, 3.862375305870572*^9}, {
   3.862375351495474*^9, 3.8623753650089874`*^9}},
- CellLabel->"In[1]:=",ExpressionUUID->"5e3b5507-d06e-4b35-8fa7-5ff126057acc"],
-
-Cell[BoxData[
- DynamicModuleBox[{$CellContext`data$$ = {}, $CellContext`datainverse$$ = {}, \
-$CellContext`value$$ = 0.5, $CellContext`inverse$$ = 0.}, 
-  TagBox[
-   StyleBox[
-    DynamicModuleBox[{Typeset`show$$ = True, Typeset`bookmarkList$$ = {}, 
-     Typeset`bookmarkMode$$ = "Menu", Typeset`animator$$, Typeset`animvar$$ = 
-     1, Typeset`name$$ = "\"untitled\"", Typeset`specs$$ = {{
-       Hold[
-        Button[
-        "Generate", {$CellContext`value$$ = 
-           RandomReal[], $CellContext`inverse$$ = InverseCDF[
-              
-              NormalDistribution[], $CellContext`value$$]; \
-$CellContext`data$$ = 
-            Append[$CellContext`data$$, $CellContext`value$$]; \
-$CellContext`datainverse$$ = 
-            Append[$CellContext`datainverse$$, $CellContext`inverse$$]}; 
-         Null]], Manipulate`Dump`ThisIsNotAControl, ControlType -> None}}, 
-     Typeset`size$$ = {900., {344.8069705558927, 350.53890435988876`}}, 
-     Typeset`update$$ = 0, Typeset`initDone$$, Typeset`skipInitDone$$ = True, 
-     Typeset`keyframeActionsQ$$ = False, Typeset`keyframeList$$ = {}}, 
-     DynamicBox[Manipulate`ManipulateBoxes[
-      1, StandardForm, "Variables" :> {}, "ControllerVariables" :> {}, 
-       "OtherVariables" :> {
-        Typeset`show$$, Typeset`bookmarkList$$, Typeset`bookmarkMode$$, 
-         Typeset`animator$$, Typeset`animvar$$, Typeset`name$$, 
-         Typeset`specs$$, Typeset`size$$, Typeset`update$$, 
-         Typeset`initDone$$, Typeset`skipInitDone$$, 
-         Typeset`keyframeActionsQ$$, Typeset`keyframeList$$}, "Body" :> Grid[{{
-           Show[{
-             Graphics[
-              Inset[
-               
-               Histogram[$CellContext`data$$, Automatic, "Probability", 
-                PlotRange -> {{0, 1}, Automatic}], Center, Center, 1.8, 
-               RotationTransform[90 Degree][{1, 0}]]]}, ImageSize -> 400], 
-           Show[{
-             Plot[
-              CDF[
-               NormalDistribution[], $CellContext`x], {$CellContext`x, -4, 4},
-               PlotRange -> {{-4, 4}, {0, 1}}], 
-             Graphics[{Red, 
-               
-               Arrow[{{
-                 0, $CellContext`value$$}, {$CellContext`inverse$$, \
-$CellContext`value$$}}], 
-               
-               Arrow[{{$CellContext`inverse$$, $CellContext`value$$}, \
-{$CellContext`inverse$$, 0}}]}]}, ImageSize -> 500]}, {Null, 
-           Show[{
-             
-             Histogram[$CellContext`datainverse$$, Automatic, "Probability", 
-              PlotRange -> {{-4, 4}, Automatic}]}, ImageSize -> 500]}}, 
-         Spacings -> {0, 0}], "Specifications" :> {
-         Button[
-         "Generate", {$CellContext`value$$ = 
-            RandomReal[], $CellContext`inverse$$ = InverseCDF[
-               
-               NormalDistribution[], $CellContext`value$$]; \
-$CellContext`data$$ = 
-             Append[$CellContext`data$$, $CellContext`value$$]; \
-$CellContext`datainverse$$ = 
-             Append[$CellContext`datainverse$$, $CellContext`inverse$$]}; 
-          Null]}, "Options" :> {}, "DefaultOptions" :> {}],
-      ImageSizeCache->{
-       947.0999999999999, {388.9031619621427, 394.63509576613876`}},
-      SingleEvaluation->True],
-     Deinitialization:>None,
-     DynamicModuleValues:>{},
-     SynchronousInitialization->True,
-     UndoTrackedVariables:>{Typeset`show$$, Typeset`bookmarkMode$$},
-     UnsavedVariables:>{Typeset`initDone$$},
-     UntrackedVariables:>{Typeset`size$$}], "Manipulate",
-    Deployed->True,
-    StripOnInput->False],
-   Manipulate`InterpretManipulate[1]],
-  DynamicModuleValues:>{}]], "Output",
- CellChangeTimes->{3.9487900931983643`*^9, 3.9487903015659065`*^9, 
-  3.9487920536491966`*^9, 3.948792163016058*^9, 3.9488012667943707`*^9, 
-  3.94880237844528*^9, 3.948802642556589*^9, 3.948802741660057*^9, 
-  3.9488032965301*^9, 3.9488034356296864`*^9, 3.948804580907522*^9, 
-  3.948804766772051*^9},
- CellLabel->"Out[1]=",ExpressionUUID->"1708bb47-b8ac-2f47-8b97-b21cb81b29fb"]
-}, Open  ]]
+ CellLabel->"In[1]:=",ExpressionUUID->"5e3b5507-d06e-4b35-8fa7-5ff126057acc"]
 }, Open  ]],
 
 Cell[CellGroupData[{
@@ -282,8 +194,6 @@ Cell["Rejection Sampling", "Section",
  CellChangeTimes->{{3.8624071386186895`*^9, 
   3.86240717227042*^9}},ExpressionUUID->"66c83838-2393-4115-b727-\
 4337e4aef7c5"],
-
-Cell[CellGroupData[{
 
 Cell[BoxData[
  RowBox[{"DynamicModule", "[", 
@@ -425,98 +335,7 @@ Cell[BoxData[
    3.862323616606612*^9, 3.8623237701662073`*^9}, {3.862323823576194*^9, 
    3.8623238654016485`*^9}, {3.8623238962184596`*^9, 3.8623238965711985`*^9}, 
    3.862374237097432*^9, {3.862459329112797*^9, 3.862459329759797*^9}},
- CellLabel->"In[2]:=",ExpressionUUID->"7383acc2-1cf4-4517-838b-f748342cae00"],
-
-Cell[BoxData[
- DynamicModuleBox[{$CellContext`data$$ = {}}, 
-  TagBox[
-   StyleBox[
-    DynamicModuleBox[{$CellContext`n$$ = 1000, $CellContext`p1$$ = {0.25, 
-     0.6}, $CellContext`p2$$ = {0.5, 0.8}, $CellContext`p3$$ = {0.75, 0.5}, 
-     Typeset`show$$ = True, Typeset`bookmarkList$$ = {}, 
-     Typeset`bookmarkMode$$ = "Menu", Typeset`animator$$, Typeset`animvar$$ = 
-     1, Typeset`name$$ = "\"untitled\"", Typeset`specs$$ = {{{
-        Hold[$CellContext`p1$$], {0.25, 0.6}}, Automatic, ControlType -> 
-       Locator}, {{
-        Hold[$CellContext`p2$$], {0.5, 0.8}}, Automatic, ControlType -> 
-       Locator}, {{
-        Hold[$CellContext`p3$$], {0.75, 0.5}}, Automatic, ControlType -> 
-       Locator}, {{
-        Hold[$CellContext`n$$], 1000}, 100, 5000, 100, ControlType -> 
-       Manipulator}, {
-       Hold[
-        Button[
-        "Generate", $CellContext`data$$ = 
-         RandomReal[{0, 1}, {$CellContext`n$$, 2}]]], 
-       Manipulate`Dump`ThisIsNotAControl, ControlType -> None}}, 
-     Typeset`size$$ = {1000., {154.34173074765468`, 160.07366455165075`}}, 
-     Typeset`update$$ = 0, Typeset`initDone$$, Typeset`skipInitDone$$ = True, 
-     Typeset`keyframeActionsQ$$ = False, Typeset`keyframeList$$ = {}}, 
-     DynamicBox[Manipulate`ManipulateBoxes[
-      1, StandardForm, 
-       "Variables" :> {$CellContext`n$$ = 
-         1000, $CellContext`p1$$ = {0.25, 0.6}, $CellContext`p2$$ = {0.5, 
-          0.8}, $CellContext`p3$$ = {0.75, 0.5}}, "ControllerVariables" :> {},
-        "OtherVariables" :> {
-        Typeset`show$$, Typeset`bookmarkList$$, Typeset`bookmarkMode$$, 
-         Typeset`animator$$, Typeset`animvar$$, Typeset`name$$, 
-         Typeset`specs$$, Typeset`size$$, Typeset`update$$, 
-         Typeset`initDone$$, Typeset`skipInitDone$$, 
-         Typeset`keyframeActionsQ$$, Typeset`keyframeList$$}, "Body" :> 
-       With[{$CellContext`dataA$ = 
-          Select[$CellContext`data$$, 
-            Interpolation[{{
-               0, 0.7}, $CellContext`p1$$, $CellContext`p2$$, \
-$CellContext`p3$$, {1, 0}}][
-              Part[#, 1]] > Part[#, 2]& ], $CellContext`dataR$ = 
-          Select[$CellContext`data$$, 
-            Interpolation[{{
-               0, 0.7}, $CellContext`p1$$, $CellContext`p2$$, \
-$CellContext`p3$$, {1, 0}}][
-              Part[#, 1]] < Part[#, 2]& ]}, 
-         Row[{
-           Show[{
-             Plot[
-              
-              Interpolation[{{
-                0, 0.7}, $CellContext`p1$$, $CellContext`p2$$, \
-$CellContext`p3$$, {1, 0}}][$CellContext`x], {$CellContext`x, 0, 1}, 
-              PlotRange -> {{0, 1}, {0, 1}}], 
-             ListPlot[$CellContext`dataA$, PlotStyle -> Green], 
-             ListPlot[$CellContext`dataR$, PlotStyle -> Red]}, ImageSize -> 
-            500], 
-           Show[{
-             Histogram[
-              Part[$CellContext`dataA$, All, 1], Automatic, "Probability"]}, 
-            ImageSize -> 500]}]], 
-       "Specifications" :> {{{$CellContext`p1$$, {0.25, 0.6}}, Automatic, 
-          ControlType -> Locator}, {{$CellContext`p2$$, {0.5, 0.8}}, 
-          Automatic, ControlType -> 
-          Locator}, {{$CellContext`p3$$, {0.75, 0.5}}, Automatic, ControlType -> 
-          Locator}, {{$CellContext`n$$, 1000}, 100, 5000, 100}, 
-         Button[
-         "Generate", $CellContext`data$$ = 
-          RandomReal[{0, 1}, {$CellContext`n$$, 2}]]}, "Options" :> {}, 
-       "DefaultOptions" :> {}],
-      ImageSizeCache->{1053.1, {211.96292215390469`, 217.69485595790076`}},
-      SingleEvaluation->True],
-     Deinitialization:>None,
-     DynamicModuleValues:>{},
-     SynchronousInitialization->True,
-     UndoTrackedVariables:>{Typeset`show$$, Typeset`bookmarkMode$$},
-     UnsavedVariables:>{Typeset`initDone$$},
-     UntrackedVariables:>{Typeset`size$$}], "Manipulate",
-    Deployed->True,
-    StripOnInput->False],
-   Manipulate`InterpretManipulate[1]],
-  DynamicModuleValues:>{}]], "Output",
- CellChangeTimes->{3.948790093366184*^9, 3.9487903017101345`*^9, 
-  3.948792053799303*^9, 3.948792163149544*^9, 3.9488012671079464`*^9, 
-  3.948802378818407*^9, 3.9488026428526*^9, 3.948802741990036*^9, 
-  3.9488032968506985`*^9, 3.9488034360115204`*^9, 3.9488045811685333`*^9, 
-  3.948804767166479*^9},
- CellLabel->"Out[2]=",ExpressionUUID->"405692a3-e1c8-9645-ad60-432326384a0c"]
-}, Open  ]]
+ CellLabel->"In[2]:=",ExpressionUUID->"7383acc2-1cf4-4517-838b-f748342cae00"]
 }, Open  ]],
 
 Cell[CellGroupData[{
@@ -525,8 +344,6 @@ Cell["Beta Distribution Series", "Section",
  CellChangeTimes->{{3.8624071386186895`*^9, 
   3.862407166340369*^9}},ExpressionUUID->"52dc20f3-a6a5-40b2-892f-\
 b2dc5f70f6f7"],
-
-Cell[CellGroupData[{
 
 Cell[BoxData[
  RowBox[{"Manipulate", "[", 
@@ -548,52 +365,6 @@ Cell[BoxData[
       RowBox[{"n", ",", "3"}], "}"}], ",", "1", ",", "8", ",", "1"}], "}"}]}],
    "]"}]], "Input",
  CellLabel->"In[3]:=",ExpressionUUID->"d76c930e-e7a4-47d2-ad89-468646c0ff25"],
-
-Cell[BoxData[
- TagBox[
-  StyleBox[
-   DynamicModuleBox[{$CellContext`n$$ = 3, Typeset`show$$ = True, 
-    Typeset`bookmarkList$$ = {}, Typeset`bookmarkMode$$ = "Menu", 
-    Typeset`animator$$, Typeset`animvar$$ = 1, Typeset`name$$ = 
-    "\"untitled\"", Typeset`specs$$ = {{{
-       Hold[$CellContext`n$$], 3}, 1, 8, 1, ControlType -> Manipulator}}, 
-    Typeset`size$$ = {360., {107.29833163073224`, 113.0302654347283}}, 
-    Typeset`update$$ = 0, Typeset`initDone$$, Typeset`skipInitDone$$ = True, 
-    Typeset`keyframeActionsQ$$ = False, Typeset`keyframeList$$ = {}}, 
-    DynamicBox[Manipulate`ManipulateBoxes[
-     1, StandardForm, "Variables" :> {$CellContext`n$$ = 3}, 
-      "ControllerVariables" :> {}, 
-      "OtherVariables" :> {
-       Typeset`show$$, Typeset`bookmarkList$$, Typeset`bookmarkMode$$, 
-        Typeset`animator$$, Typeset`animvar$$, Typeset`name$$, 
-        Typeset`specs$$, Typeset`size$$, Typeset`update$$, Typeset`initDone$$,
-         Typeset`skipInitDone$$, Typeset`keyframeActionsQ$$, 
-        Typeset`keyframeList$$}, "Body" :> Plot[
-        Evaluate[
-         Table[
-          
-          BernsteinBasis[$CellContext`n$$, $CellContext`k, $CellContext`x], \
-{$CellContext`k, 0, $CellContext`n$$}]], {$CellContext`x, 0, 1}], 
-      "Specifications" :> {{{$CellContext`n$$, 3}, 1, 8, 1}}, "Options" :> {},
-       "DefaultOptions" :> {}],
-     ImageSizeCache->{407.1, {149.33417147448222`, 155.0661052784783}},
-     SingleEvaluation->True],
-    Deinitialization:>None,
-    DynamicModuleValues:>{},
-    SynchronousInitialization->True,
-    UndoTrackedVariables:>{Typeset`show$$, Typeset`bookmarkMode$$},
-    UnsavedVariables:>{Typeset`initDone$$},
-    UntrackedVariables:>{Typeset`size$$}], "Manipulate",
-   Deployed->True,
-   StripOnInput->False],
-  Manipulate`InterpretManipulate[1]]], "Output",
- CellChangeTimes->{3.94879009354154*^9, 3.9487903018493996`*^9, 
-  3.9487920539828987`*^9, 3.948792163299206*^9, 3.9488012673059387`*^9, 
-  3.948802379106516*^9, 3.9488026431391945`*^9, 3.9488027422295704`*^9, 
-  3.9488032970327835`*^9, 3.9488034363828087`*^9, 3.948804581393509*^9, 
-  3.9488047675465736`*^9},
- CellLabel->"Out[3]=",ExpressionUUID->"384ebe05-5dcf-cf4a-86f8-ffe59407eb34"]
-}, Open  ]],
 
 Cell[BoxData[
  RowBox[{
@@ -643,8 +414,6 @@ Cell[BoxData[
   3.8623859911147785`*^9, 3.8623860054958916`*^9}, {3.8624073715972424`*^9, 
   3.8624073770726633`*^9}},
  CellLabel->"In[4]:=",ExpressionUUID->"0700d8ce-d120-4132-aa9e-f48088d6ab09"],
-
-Cell[CellGroupData[{
 
 Cell[BoxData[
  RowBox[{"DynamicModule", "[", 
@@ -807,140 +576,7 @@ Cell[BoxData[
    3.8626383165933275`*^9, 3.8626384171133347`*^9}, {3.8626385150996933`*^9, 
    3.862638550754141*^9}, {3.86263858385116*^9, 3.862638649456044*^9}, {
    3.8626387040358505`*^9, 3.862638704329519*^9}},
- CellLabel->"In[5]:=",ExpressionUUID->"71e137f4-5414-40a9-8f0b-76c581e50c1f"],
-
-Cell[BoxData[
- DynamicModuleBox[{$CellContext`polynomial$$ = 
-  0, $CellContext`distribution$$ = NormalDistribution[
-  0, 1], $CellContext`coefficients$$ = {}, $CellContext`data$$ = {}, \
-$CellContext`parameters$$ = {}}, 
-  TagBox[
-   StyleBox[
-    DynamicModuleBox[{$CellContext`p1$$ = {0.25, 0.6}, $CellContext`p2$$ = {
-     0.5, 0.7}, $CellContext`p3$$ = {0.75, 0.5}, Typeset`show$$ = True, 
-     Typeset`bookmarkList$$ = {}, Typeset`bookmarkMode$$ = "Menu", 
-     Typeset`animator$$, Typeset`animvar$$ = 1, Typeset`name$$ = 
-     "\"untitled\"", Typeset`specs$$ = {{{
-        Hold[$CellContext`p1$$], {0.25, 0.6}}, Automatic, ControlType -> 
-       Locator}, {{
-        Hold[$CellContext`p2$$], {0.5, 0.7}}, Automatic, ControlType -> 
-       Locator}, {{
-        Hold[$CellContext`p3$$], {0.75, 0.5}}, Automatic, ControlType -> 
-       Locator}, {
-       Hold[
-        Button[
-        "Generate", {$CellContext`polynomial$$ = 
-           InterpolatingPolynomial[{{
-              0, 0.7}, $CellContext`p1$$, $CellContext`p2$$, \
-$CellContext`p3$$, {
-              1, 0.1}}, $CellContext`x], $CellContext`coefficients$$ = \
-$CellContext`bernsteinCoefficients[$CellContext`polynomial$$], \
-$CellContext`distribution$$ = MixtureDistribution[$CellContext`coefficients$$, 
-             Table[
-              BetaDistribution[
-              Length[$CellContext`coefficients$$] - $CellContext`i, \
-$CellContext`i + 1], {$CellContext`i, 0, Length[$CellContext`coefficients$$] - 
-               1}]], $CellContext`data$$ = 
-           RandomVariate[$CellContext`distribution$$, 20000], 
-           
-           Quiet[$CellContext`parameters$$ = 
-            FindDistributionParameters[$CellContext`data$$, 
-              
-              MixtureDistribution[{$CellContext`w1, $CellContext`w2, \
-$CellContext`w3, $CellContext`w4, 
-                1 - $CellContext`w1 - $CellContext`w2 - $CellContext`w3 - \
-$CellContext`w4}, 
-               Evaluate[
-                Table[
-                 BetaDistribution[
-                 Length[$CellContext`coefficients$$] - $CellContext`i, \
-$CellContext`i + 1], {$CellContext`i, 0, Length[$CellContext`coefficients$$] - 
-                  1}]]]]]}; Null]], Manipulate`Dump`ThisIsNotAControl, 
-       ControlType -> None}}, Typeset`size$$ = {
-     1005.1999999999999`, {162.7466626012033, 168.47859640519937`}}, 
-     Typeset`update$$ = 0, Typeset`initDone$$, Typeset`skipInitDone$$ = True, 
-     Typeset`keyframeActionsQ$$ = False, Typeset`keyframeList$$ = {}}, 
-     DynamicBox[Manipulate`ManipulateBoxes[
-      1, StandardForm, 
-       "Variables" :> {$CellContext`p1$$ = {0.25, 0.6}, $CellContext`p2$$ = {
-          0.5, 0.7}, $CellContext`p3$$ = {0.75, 0.5}}, 
-       "ControllerVariables" :> {}, 
-       "OtherVariables" :> {
-        Typeset`show$$, Typeset`bookmarkList$$, Typeset`bookmarkMode$$, 
-         Typeset`animator$$, Typeset`animvar$$, Typeset`name$$, 
-         Typeset`specs$$, Typeset`size$$, Typeset`update$$, 
-         Typeset`initDone$$, Typeset`skipInitDone$$, 
-         Typeset`keyframeActionsQ$$, Typeset`keyframeList$$}, "Body" :> Grid[{{
-           Show[{
-             Plot[
-              Function[{$CellContext`x$}, 
-               
-               InterpolatingPolynomial[{{
-                 0, 0.7}, $CellContext`p1$$, $CellContext`p2$$, \
-$CellContext`p3$$, {
-                 1, 0.1}}, $CellContext`x$]][$CellContext`x], {$CellContext`x,
-                0, 1}, PlotRange -> {{0, 1}, {0, 1}}]}, ImageSize -> 500], 
-           Show[{
-             Histogram[$CellContext`data$$, Automatic, "Probability"]}, 
-            ImageSize -> 500]}, {$CellContext`coefficients$$, 
-           
-           ReplaceAll[{$CellContext`w1, $CellContext`w2, $CellContext`w3, \
-$CellContext`w4, 
-             1 - $CellContext`w1 - $CellContext`w2 - $CellContext`w3 - \
-$CellContext`w4}, $CellContext`parameters$$]}}], 
-       "Specifications" :> {{{$CellContext`p1$$, {0.25, 0.6}}, Automatic, 
-          ControlType -> Locator}, {{$CellContext`p2$$, {0.5, 0.7}}, 
-          Automatic, ControlType -> 
-          Locator}, {{$CellContext`p3$$, {0.75, 0.5}}, Automatic, ControlType -> 
-          Locator}, 
-         Button[
-         "Generate", {$CellContext`polynomial$$ = 
-            InterpolatingPolynomial[{{
-               0, 0.7}, $CellContext`p1$$, $CellContext`p2$$, \
-$CellContext`p3$$, {
-               1, 0.1}}, $CellContext`x], $CellContext`coefficients$$ = \
-$CellContext`bernsteinCoefficients[$CellContext`polynomial$$], \
-$CellContext`distribution$$ = MixtureDistribution[$CellContext`coefficients$$, 
-              Table[
-               BetaDistribution[
-               Length[$CellContext`coefficients$$] - $CellContext`i, \
-$CellContext`i + 1], {$CellContext`i, 0, Length[$CellContext`coefficients$$] - 
-                1}]], $CellContext`data$$ = 
-            RandomVariate[$CellContext`distribution$$, 20000], 
-            
-            Quiet[$CellContext`parameters$$ = 
-             FindDistributionParameters[$CellContext`data$$, 
-               
-               MixtureDistribution[{$CellContext`w1, $CellContext`w2, \
-$CellContext`w3, $CellContext`w4, 
-                 1 - $CellContext`w1 - $CellContext`w2 - $CellContext`w3 - \
-$CellContext`w4}, 
-                Evaluate[
-                 Table[
-                  BetaDistribution[
-                  Length[$CellContext`coefficients$$] - $CellContext`i, \
-$CellContext`i + 1], {$CellContext`i, 0, Length[$CellContext`coefficients$$] - 
-                   1}]]]]]}; Null]}, "Options" :> {}, "DefaultOptions" :> {}],
-      ImageSizeCache->{
-       1058.2999999999997`, {209.8428540074533, 215.57478781144937`}},
-      SingleEvaluation->True],
-     Deinitialization:>None,
-     DynamicModuleValues:>{},
-     SynchronousInitialization->True,
-     UndoTrackedVariables:>{Typeset`show$$, Typeset`bookmarkMode$$},
-     UnsavedVariables:>{Typeset`initDone$$},
-     UntrackedVariables:>{Typeset`size$$}], "Manipulate",
-    Deployed->True,
-    StripOnInput->False],
-   Manipulate`InterpretManipulate[1]],
-  DynamicModuleValues:>{}]], "Output",
- CellChangeTimes->{3.948790093682785*^9, 3.948790301995001*^9, 
-  3.9487920540991726`*^9, 3.948792163399351*^9, 3.9488012674471817`*^9, 
-  3.9488023793627224`*^9, 3.948802643326826*^9, 3.9488027424036236`*^9, 
-  3.9488032971577663`*^9, 3.9488034366757927`*^9, 3.9488045815285225`*^9, 
-  3.9488047678383827`*^9},
- CellLabel->"Out[5]=",ExpressionUUID->"14153c0e-2b30-264e-8f2a-efc2ba8f4ba4"]
-}, Open  ]]
+ CellLabel->"In[5]:=",ExpressionUUID->"71e137f4-5414-40a9-8f0b-76c581e50c1f"]
 }, Open  ]],
 
 Cell[CellGroupData[{
@@ -950,8 +586,6 @@ Cell["2D Beta Distribution Series", "Section",
   3.8626425418646317`*^9, 
   3.862642542401071*^9}},ExpressionUUID->"02e71866-f94f-48ae-8eca-\
 18cf1d2bb256"],
-
-Cell[CellGroupData[{
 
 Cell[BoxData[
  RowBox[{"DynamicModule", "[", 
@@ -1003,69 +637,13 @@ Cell[BoxData[
  CellChangeTimes->{{3.863175372089134*^9, 3.863175419046423*^9}, {
   3.863175449640649*^9, 3.8631755457760735`*^9}, {3.863175600212121*^9, 
   3.8631756676649294`*^9}},
- CellLabel->"In[6]:=",ExpressionUUID->"bcb87c78-4ef5-4cf9-a082-7b4692d8b8f7"],
-
-Cell[BoxData[
- DynamicModuleBox[{$CellContext`coefficients$$ = {{0.09193150367967928, 
-  0.597709331403061, 0.7731942405110761, 0.8853424025274976}, {
-  0.8044457204619375, 0.9053061177326975, 0.1267503405998609, 
-  0.7550315666720118}, {0.09894281615410683, 0.8625677097193076, 
-  0.334090549576892, 0.15195947613541216`}, {0.6381989388663409, 
-  0.4055386578894118, 0.0594785452872586, 0.4217372614977515}}}, 
-  TagBox[
-   StyleBox[
-    DynamicModuleBox[{Typeset`show$$ = True, Typeset`bookmarkList$$ = {}, 
-     Typeset`bookmarkMode$$ = "Menu", Typeset`animator$$, Typeset`animvar$$ = 
-     1, Typeset`name$$ = "\"untitled\"", Typeset`specs$$ = {{
-       Hold[
-        Button[
-        "Generate", $CellContext`coefficients$$ = RandomReal[{0, 1}, {4, 4}]; 
-         Null]], Manipulate`Dump`ThisIsNotAControl, ControlType -> None}}, 
-     Typeset`size$$ = {360., {170.68971316247232`, 176.4216469664684}}, 
-     Typeset`update$$ = 0, Typeset`initDone$$, Typeset`skipInitDone$$ = True, 
-     Typeset`keyframeActionsQ$$ = False, Typeset`keyframeList$$ = {}}, 
-     DynamicBox[Manipulate`ManipulateBoxes[
-      1, StandardForm, "Variables" :> {}, "ControllerVariables" :> {}, 
-       "OtherVariables" :> {
-        Typeset`show$$, Typeset`bookmarkList$$, Typeset`bookmarkMode$$, 
-         Typeset`animator$$, Typeset`animvar$$, Typeset`name$$, 
-         Typeset`specs$$, Typeset`size$$, Typeset`update$$, 
-         Typeset`initDone$$, Typeset`skipInitDone$$, 
-         Typeset`keyframeActionsQ$$, Typeset`keyframeList$$}, "Body" :> Plot3D[
-         Evaluate[
-          Sum[
-          BernsteinBasis[3, $CellContext`j - 1, $CellContext`x] 
-           BernsteinBasis[3, $CellContext`i - 1, $CellContext`y] 
-           Part[$CellContext`coefficients$$, $CellContext`i, $CellContext`j], \
-{$CellContext`i, 1, 4}, {$CellContext`j, 1, 4}]], {$CellContext`x, 0, 
-          1}, {$CellContext`y, 0, 1}], "Specifications" :> {
-         Button[
-         "Generate", $CellContext`coefficients$$ = RandomReal[{0, 1}, {4, 4}]; 
-          Null]}, "Options" :> {}, "DefaultOptions" :> {}],
-      ImageSizeCache->{407.1, {214.78590456872232`, 220.5178383727184}},
-      SingleEvaluation->True],
-     Deinitialization:>None,
-     DynamicModuleValues:>{},
-     SynchronousInitialization->True,
-     UndoTrackedVariables:>{Typeset`show$$, Typeset`bookmarkMode$$},
-     UnsavedVariables:>{Typeset`initDone$$},
-     UntrackedVariables:>{Typeset`size$$}], "Manipulate",
-    Deployed->True,
-    StripOnInput->False],
-   Manipulate`InterpretManipulate[1]],
-  DynamicModuleValues:>{}]], "Output",
- CellChangeTimes->{3.948790093782877*^9, 3.9487903020994415`*^9, 
-  3.948792054199257*^9, 3.948792163509428*^9, 3.9488012675461636`*^9, 
-  3.948802379648184*^9, 3.948802643491686*^9, 3.948802742499628*^9, 
-  3.9488032972727547`*^9, 3.948803436939665*^9, 3.948804581636507*^9, 
-  3.9488047681043606`*^9},
- CellLabel->"Out[6]=",ExpressionUUID->"211c07dc-b9ac-0e44-919b-b4aedef4c814"]
-}, Open  ]]
+ CellLabel->"In[6]:=",ExpressionUUID->"bcb87c78-4ef5-4cf9-a082-7b4692d8b8f7"]
 }, Open  ]]
 }, Open  ]]
 },
 WindowSize->{1428, 735.75},
 WindowMargins->{{0, Automatic}, {Automatic, 0}},
+Visible->False,
 FrontEndVersion->"14.2 for Microsoft Windows (64-bit) (December 26, 2024)",
 StyleDefinitions->"Default.nb",
 ExpressionUUID->"383084c8-be70-2a4c-b6b2-18aaf8015c97"
@@ -1087,36 +665,21 @@ Cell[863, 28, 317, 5, 52, "Subtitle",ExpressionUUID->"0518086d-0d1f-7742-9aea-f4
 Cell[1183, 35, 547, 10, 33, "Text",ExpressionUUID->"b82ba746-9d46-e645-8484-c83be4deb0fa"],
 Cell[CellGroupData[{
 Cell[1755, 49, 165, 3, 66, "Section",ExpressionUUID->"e082f0ef-9423-4879-8fe3-781d31553ff6"],
-Cell[CellGroupData[{
-Cell[1945, 56, 5375, 133, 180, "Input",ExpressionUUID->"5e3b5507-d06e-4b35-8fa7-5ff126057acc"],
-Cell[7323, 191, 3963, 83, 800, "Output",ExpressionUUID->"1708bb47-b8ac-2f47-8b97-b21cb81b29fb"]
-}, Open  ]]
+Cell[1923, 54, 5375, 133, 180, "Input",ExpressionUUID->"5e3b5507-d06e-4b35-8fa7-5ff126057acc"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[11335, 280, 164, 3, 66, "Section",ExpressionUUID->"66c83838-2393-4115-b727-4337e4aef7c5"],
-Cell[CellGroupData[{
-Cell[11524, 287, 5522, 140, 104, "Input",ExpressionUUID->"7383acc2-1cf4-4517-838b-f748342cae00"],
-Cell[17049, 429, 4293, 88, 446, "Output",ExpressionUUID->"405692a3-e1c8-9645-ad60-432326384a0c"]
-}, Open  ]]
+Cell[7335, 192, 164, 3, 66, "Section",ExpressionUUID->"66c83838-2393-4115-b727-4337e4aef7c5"],
+Cell[7502, 197, 5522, 140, 104, "Input",ExpressionUUID->"7383acc2-1cf4-4517-838b-f748342cae00"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[21391, 523, 171, 3, 66, "Section",ExpressionUUID->"52dc20f3-a6a5-40b2-892f-b2dc5f70f6f7"],
-Cell[CellGroupData[{
-Cell[21587, 530, 667, 19, 28, "Input",ExpressionUUID->"d76c930e-e7a4-47d2-ad89-468646c0ff25"],
-Cell[22257, 551, 2214, 43, 321, "Output",ExpressionUUID->"384ebe05-5dcf-cf4a-86f8-ffe59407eb34"]
-}, Open  ]],
-Cell[24486, 597, 1816, 47, 85, "Input",ExpressionUUID->"0700d8ce-d120-4132-aa9e-f48088d6ab09"],
-Cell[CellGroupData[{
-Cell[26327, 648, 6744, 161, 199, "Input",ExpressionUUID->"71e137f4-5414-40a9-8f0b-76c581e50c1f"],
-Cell[33074, 811, 6435, 130, 442, "Output",ExpressionUUID->"14153c0e-2b30-264e-8f2a-efc2ba8f4ba4"]
-}, Open  ]]
+Cell[13061, 342, 171, 3, 66, "Section",ExpressionUUID->"52dc20f3-a6a5-40b2-892f-b2dc5f70f6f7"],
+Cell[13235, 347, 667, 19, 28, "Input",ExpressionUUID->"d76c930e-e7a4-47d2-ad89-468646c0ff25"],
+Cell[13905, 368, 1816, 47, 85, "Input",ExpressionUUID->"0700d8ce-d120-4132-aa9e-f48088d6ab09"],
+Cell[15724, 417, 6744, 161, 199, "Input",ExpressionUUID->"71e137f4-5414-40a9-8f0b-76c581e50c1f"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[39558, 947, 225, 4, 66, "Section",ExpressionUUID->"02e71866-f94f-48ae-8eca-18cf1d2bb256"],
-Cell[CellGroupData[{
-Cell[39808, 955, 1859, 50, 66, "Input",ExpressionUUID->"bcb87c78-4ef5-4cf9-a082-7b4692d8b8f7"],
-Cell[41670, 1007, 2949, 54, 452, "Output",ExpressionUUID->"211c07dc-b9ac-0e44-919b-b4aedef4c814"]
-}, Open  ]]
+Cell[22505, 583, 225, 4, 66, "Section",ExpressionUUID->"02e71866-f94f-48ae-8eca-18cf1d2bb256"],
+Cell[22733, 589, 1859, 50, 66, "Input",ExpressionUUID->"bcb87c78-4ef5-4cf9-a082-7b4692d8b8f7"]
 }, Open  ]]
 }, Open  ]]
 }

@@ -1,4 +1,4 @@
-Back [up](./).
+Click [here](./) to go back.
 
 # Mathematica Code Collection
 

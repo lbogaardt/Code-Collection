@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[     15400,        363]
-NotebookOptionsPosition[     14471,        338]
-NotebookOutlinePosition[     14875,        354]
-CellTagsIndexPosition[     14832,        351]
+NotebookDataLength[     10674,        264]
+NotebookOptionsPosition[      9859,        241]
+NotebookOutlinePosition[     10279,        258]
+CellTagsIndexPosition[     10236,        255]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -26,10 +26,11 @@ Cell["Age-Period-Cohort Effect Visualisation", "Title",
    3.948781892049383*^9},ExpressionUUID->"6417cc02-277d-c645-a06c-\
 272f1f5e625e"],
 
-Cell["Laurens Bogaardt | RIVM | SIM | 2023", "Subtitle",
+Cell["Laurens Bogaardt | 2023", "Subtitle",
  CellChangeTimes->{{3.7773724556479893`*^9, 3.7773724743060675`*^9}, {
-  3.7773728665417023`*^9, 3.7773728683357487`*^9}, {3.9487818951397305`*^9, 
-  3.9487818953329105`*^9}},ExpressionUUID->"2c1563d9-608c-594e-b97d-\
+   3.7773728665417023`*^9, 3.7773728683357487`*^9}, {3.9487818951397305`*^9, 
+   3.9487818953329105`*^9}, 
+   3.948807599467018*^9},ExpressionUUID->"2c1563d9-608c-594e-b97d-\
 0a5c9b8d7993"],
 
 Cell["\<\
@@ -50,8 +51,6 @@ Cell["Visualisation", "Section",
   3.948781945099428*^9, 
   3.948781947599415*^9}},ExpressionUUID->"444e9146-0ae4-664c-a536-\
 bcfbf339428b"],
-
-Cell[CellGroupData[{
 
 Cell[BoxData[
  RowBox[{"Manipulate", "[", 
@@ -236,108 +235,13 @@ Cell[BoxData[
   3.8647904090384693`*^9}, {3.864790449113488*^9, 3.864790449532473*^9}, {
   3.8647904964894843`*^9, 3.864790533677494*^9}, {3.864790579024499*^9, 
   3.864790620100512*^9}, {3.864793387751847*^9, 3.8647934633038683`*^9}},
- CellLabel->"In[1]:=",ExpressionUUID->"6b22484b-cbc3-4b40-b19f-8b53323293c5"],
-
-Cell[BoxData[
- TagBox[
-  StyleBox[
-   DynamicModuleBox[{$CellContext`observationyear$$ = 2000, Typeset`show$$ = 
-    True, Typeset`bookmarkList$$ = {}, Typeset`bookmarkMode$$ = "Menu", 
-    Typeset`animator$$, Typeset`animvar$$ = 1, Typeset`name$$ = 
-    "\"untitled\"", Typeset`specs$$ = {{
-      Hold[$CellContext`observationyear$$], 2000, 2030, 2, ControlType -> 
-      Manipulator}}, Typeset`size$$ = {
-    1005.1999999999999`, {387.6409750571117, 393.37290886110776`}}, 
-    Typeset`update$$ = 0, Typeset`initDone$$, Typeset`skipInitDone$$ = True, 
-    Typeset`keyframeActionsQ$$ = False, Typeset`keyframeList$$ = {}}, 
-    DynamicBox[Manipulate`ManipulateBoxes[
-     1, StandardForm, "Variables" :> {$CellContext`observationyear$$ = 2000}, 
-      "ControllerVariables" :> {}, 
-      "OtherVariables" :> {
-       Typeset`show$$, Typeset`bookmarkList$$, Typeset`bookmarkMode$$, 
-        Typeset`animator$$, Typeset`animvar$$, Typeset`name$$, 
-        Typeset`specs$$, Typeset`size$$, Typeset`update$$, Typeset`initDone$$,
-         Typeset`skipInitDone$$, Typeset`keyframeActionsQ$$, 
-        Typeset`keyframeList$$}, "Body" :> 
-      Grid[{{"Cohort effect: rate = f(birthyear)", 
-          "Age effect: rate = f(age)"}, {
-          Show[
-           Plot3D[
-           0.5 + 0.1 
-             Sin[$CellContext`birthyear (Pi/40)], {$CellContext`birthyear, 
-             1900, 2030}, {$CellContext`age, 0, 100}, PlotRange -> {0, 1}, 
-            AxesLabel -> {"Birthyear", "Age", "Stop Rate"}], 
-           
-           ParametricPlot3D[{$CellContext`birthyear, \
-$CellContext`observationyear$$ - $CellContext`birthyear, 0.5 + 
-             0.1 Sin[$CellContext`birthyear (Pi/
-                 40)]}, {$CellContext`birthyear, 1900, 2030}, PlotStyle -> 
-            Thickness[0.02]], 
-           Graphics3D[{
-             Opacity[0.5], Green, 
-             
-             Polygon[{{$CellContext`observationyear$$, 0, 
-                0}, {$CellContext`observationyear$$, 0, 
-                1}, {$CellContext`observationyear$$ - 100, 100, 
-                1}, {$CellContext`observationyear$$ - 100, 100, 0}}]}], 
-           ImageSize -> 500], 
-          Show[
-           Plot3D[
-           0.5 + 0.1 
-             Sin[Pi + $CellContext`age (Pi/40)], {$CellContext`birthyear, 
-             1900, 2030}, {$CellContext`age, 0, 100}, PlotRange -> {0, 1}, 
-            AxesLabel -> {"Birthyear", "Age", "Stop Rate"}], 
-           
-           ParametricPlot3D[{$CellContext`birthyear, \
-$CellContext`observationyear$$ - $CellContext`birthyear, 0.5 + 
-             0.1 Sin[Pi + ($CellContext`observationyear$$ - \
-$CellContext`birthyear) (Pi/40)]}, {$CellContext`birthyear, 1900, 2030}, 
-            PlotStyle -> Thickness[0.02]], 
-           Graphics3D[{
-             Opacity[0.5], Green, 
-             
-             Polygon[{{$CellContext`observationyear$$, 0, 
-                0}, {$CellContext`observationyear$$, 0, 
-                1}, {$CellContext`observationyear$$ - 100, 100, 
-                1}, {$CellContext`observationyear$$ - 100, 100, 0}}]}], 
-           ImageSize -> 500]}, {
-          Show[
-           Plot[
-           0.5 + 0.1 
-             Sin[($CellContext`observationyear$$ - $CellContext`age) (Pi/
-                40)], {$CellContext`age, 0, 100}, PlotRange -> {0, 1}, 
-            AxesLabel -> {"Age", "Stop Rate"}], ImageSize -> 500], 
-          Show[
-           Plot[
-           0.5 + 0.1 Sin[Pi + $CellContext`age (Pi/40)], {$CellContext`age, 0,
-              100}, PlotRange -> {0, 1}, AxesLabel -> {"Age", "Stop Rate"}], 
-           ImageSize -> 500]}}], 
-      "Specifications" :> {{$CellContext`observationyear$$, 2000, 2030, 2}}, 
-      "Options" :> {}, "DefaultOptions" :> {}],
-     ImageSizeCache->{
-      1052.2999999999997`, {429.6768149008617, 435.40874870485777`}},
-     SingleEvaluation->True],
-    Deinitialization:>None,
-    DynamicModuleValues:>{},
-    SynchronousInitialization->True,
-    UndoTrackedVariables:>{Typeset`show$$, Typeset`bookmarkMode$$},
-    UnsavedVariables:>{Typeset`initDone$$},
-    UntrackedVariables:>{Typeset`size$$}], "Manipulate",
-   Deployed->True,
-   StripOnInput->False],
-  Manipulate`InterpretManipulate[1]]], "Output",
- CellChangeTimes->{3.9487899426496353`*^9, 3.948790012583025*^9, 
-  3.948790263349514*^9, 3.9487919746158886`*^9, 3.948792126607645*^9, 
-  3.9488011510529366`*^9, 3.9488023130198174`*^9, 3.9488025489629498`*^9, 
-  3.948802696004221*^9, 3.948803207806101*^9, 3.9488033780019817`*^9, 
-  3.9488044879850597`*^9, 3.948804685172724*^9},
- CellLabel->"Out[1]=",ExpressionUUID->"ce4de872-5271-d345-81a0-14f23a89c832"]
-}, Open  ]]
+ CellLabel->"In[1]:=",ExpressionUUID->"6b22484b-cbc3-4b40-b19f-8b53323293c5"]
 }, Open  ]]
 }, Open  ]]
 },
 WindowSize->{1428, 735.75},
 WindowMargins->{{0, Automatic}, {Automatic, 0}},
+Visible->False,
 FrontEndVersion->"14.2 for Microsoft Windows (64-bit) (December 26, 2024)",
 StyleDefinitions->"Default.nb",
 ExpressionUUID->"832938b1-f3f5-3744-9f22-9a49eb03c3df"
@@ -355,14 +259,11 @@ CellTagsIndex->{}
 Notebook[{
 Cell[CellGroupData[{
 Cell[576, 22, 257, 4, 96, "Title",ExpressionUUID->"6417cc02-277d-c645-a06c-272f1f5e625e"],
-Cell[836, 28, 289, 4, 52, "Subtitle",ExpressionUUID->"2c1563d9-608c-594e-b97d-0a5c9b8d7993"],
-Cell[1128, 34, 496, 9, 33, "Text",ExpressionUUID->"ac98724a-f9c0-b64f-b224-b9b17d0206b1"],
+Cell[836, 28, 304, 5, 52, "Subtitle",ExpressionUUID->"2c1563d9-608c-594e-b97d-0a5c9b8d7993"],
+Cell[1143, 35, 496, 9, 33, "Text",ExpressionUUID->"ac98724a-f9c0-b64f-b224-b9b17d0206b1"],
 Cell[CellGroupData[{
-Cell[1649, 47, 211, 4, 66, "Section",ExpressionUUID->"444e9146-0ae4-664c-a536-bcfbf339428b"],
-Cell[CellGroupData[{
-Cell[1885, 55, 7953, 183, 199, "Input",ExpressionUUID->"6b22484b-cbc3-4b40-b19f-8b53323293c5"],
-Cell[9841, 240, 4590, 93, 882, "Output",ExpressionUUID->"ce4de872-5271-d345-81a0-14f23a89c832"]
-}, Open  ]]
+Cell[1664, 48, 211, 4, 66, "Section",ExpressionUUID->"444e9146-0ae4-664c-a536-bcfbf339428b"],
+Cell[1878, 54, 7953, 183, 199, "Input",ExpressionUUID->"6b22484b-cbc3-4b40-b19f-8b53323293c5"]
 }, Open  ]]
 }, Open  ]]
 }
