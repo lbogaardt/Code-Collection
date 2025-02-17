@@ -10,14 +10,47 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[      8692,        218]
-NotebookOptionsPosition[      8445,        205]
-NotebookOutlinePosition[      8793,        220]
-CellTagsIndexPosition[      8750,        217]
+NotebookDataLength[     10627,        263]
+NotebookOptionsPosition[      9830,        241]
+NotebookOutlinePosition[     10236,        257]
+CellTagsIndexPosition[     10193,        254]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
 Notebook[{
+
+Cell[CellGroupData[{
+Cell["Age-Period-Cohort Effect Visualisation", "Title",
+ CellChangeTimes->{{3.777372445226922*^9, 3.7773724527775154`*^9}, {
+   3.77839228895363*^9, 3.7783923036644297`*^9}, 
+   3.948781892049383*^9},ExpressionUUID->"6417cc02-277d-c645-a06c-\
+272f1f5e625e"],
+
+Cell["Laurens Bogaardt | RIVM | SIM | 2023", "Subtitle",
+ CellChangeTimes->{{3.7773724556479893`*^9, 3.7773724743060675`*^9}, {
+  3.7773728665417023`*^9, 3.7773728683357487`*^9}, {3.9487818951397305`*^9, 
+  3.9487818953329105`*^9}},ExpressionUUID->"2c1563d9-608c-594e-b97d-\
+0a5c9b8d7993"],
+
+Cell["\<\
+This document visualises how age-, period- and cohort-effects are observed in \
+cross-sectional data.\
+\>", "Text",
+ CellChangeTimes->{{3.948778457897154*^9, 3.948778463015894*^9}, {
+  3.9487785069023094`*^9, 3.948778571033579*^9}, {3.9487786119160824`*^9, 
+  3.9487787055997257`*^9}, {3.9487787509729137`*^9, 3.948778752299238*^9}, {
+  3.94878188048394*^9, 3.948781882199524*^9}, {3.948781949599682*^9, 
+  3.94878199081637*^9}},ExpressionUUID->"ac98724a-f9c0-b64f-b224-\
+b9b17d0206b1"],
+
+Cell[CellGroupData[{
+
+Cell["Visualisation", "Section",
+ CellChangeTimes->{{3.7783957100480323`*^9, 3.7783957147748623`*^9}, {
+  3.948781945099428*^9, 
+  3.948781947599415*^9}},ExpressionUUID->"444e9146-0ae4-664c-a536-\
+bcfbf339428b"],
+
 Cell[BoxData[
  RowBox[{"Manipulate", "[", 
   RowBox[{
@@ -25,9 +58,8 @@ Cell[BoxData[
     RowBox[{"{", 
      RowBox[{
       RowBox[{"{", 
-       RowBox[{
-       "\"\<Cohort effect: rate = f(birthyear)\>\"", ",", 
-        "\"\<Age effect: rate = f(age)\>\""}], "}"}], ",", 
+       RowBox[{"\"\<Cohort effect: rate = f(birthyear)\>\"", 
+        ",", "\"\<Age effect: rate = f(age)\>\""}], "}"}], ",", 
       RowBox[{"{", 
        RowBox[{
         RowBox[{"Show", "[", 
@@ -48,9 +80,9 @@ Cell[BoxData[
               RowBox[{"0", ",", "1"}], "}"}]}], ",", 
             RowBox[{"AxesLabel", "\[Rule]", 
              RowBox[{"{", 
-              RowBox[{
-              "\"\<Birthyear\>\"", ",", "\"\<Age\>\"", ",", 
-               "\"\<Stop Rate\>\""}], "}"}]}]}], "]"}], ",", 
+              
+              RowBox[{"\"\<Birthyear\>\"", ",", "\"\<Age\>\"", 
+               ",", "\"\<Stop Rate\>\""}], "}"}]}]}], "]"}], ",", 
           RowBox[{"ParametricPlot3D", "[", 
            RowBox[{
             RowBox[{"{", 
@@ -104,9 +136,9 @@ Cell[BoxData[
               RowBox[{"0", ",", "1"}], "}"}]}], ",", 
             RowBox[{"AxesLabel", "\[Rule]", 
              RowBox[{"{", 
-              RowBox[{
-              "\"\<Birthyear\>\"", ",", "\"\<Age\>\"", ",", 
-               "\"\<Stop Rate\>\""}], "}"}]}]}], "]"}], ",", 
+              
+              RowBox[{"\"\<Birthyear\>\"", ",", "\"\<Age\>\"", 
+               ",", "\"\<Stop Rate\>\""}], "}"}]}]}], "]"}], ",", 
           RowBox[{"ParametricPlot3D", "[", 
            RowBox[{
             RowBox[{"{", 
@@ -201,12 +233,17 @@ Cell[BoxData[
   3.8647901177422085`*^9, 3.864790174727534*^9}, {3.864790339104456*^9, 
   3.8647904090384693`*^9}, {3.864790449113488*^9, 3.864790449532473*^9}, {
   3.8647904964894843`*^9, 3.864790533677494*^9}, {3.864790579024499*^9, 
-  3.864790620100512*^9}, {3.864793387751847*^9, 3.8647934633038683`*^9}}]
+  3.864790620100512*^9}, {3.864793387751847*^9, 
+  3.8647934633038683`*^9}},ExpressionUUID->"6b22484b-cbc3-4b40-b19f-\
+8b53323293c5"]
+}, Open  ]]
+}, Open  ]]
 },
-WindowSize->{1920, 997},
-WindowMargins->{{-8, Automatic}, {Automatic, -8}},
-FrontEndVersion->"11.0 for Microsoft Windows (64-bit) (September 21, 2016)",
-StyleDefinitions->"Default.nb"
+WindowSize->{1440, 747.75},
+WindowMargins->{{-6, Automatic}, {Automatic, -6}},
+FrontEndVersion->"14.2 for Microsoft Windows (64-bit) (December 26, 2024)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"832938b1-f3f5-3744-9f22-9a49eb03c3df"
 ]
 (* End of Notebook Content *)
 
@@ -219,7 +256,15 @@ CellTagsIndex->{}
 *)
 (*NotebookFileOutline
 Notebook[{
-Cell[558, 20, 7883, 183, 202, "Input"]
+Cell[CellGroupData[{
+Cell[580, 22, 257, 4, 96, "Title",ExpressionUUID->"6417cc02-277d-c645-a06c-272f1f5e625e"],
+Cell[840, 28, 289, 4, 52, "Subtitle",ExpressionUUID->"2c1563d9-608c-594e-b97d-0a5c9b8d7993"],
+Cell[1132, 34, 496, 9, 33, "Text",ExpressionUUID->"ac98724a-f9c0-b64f-b224-b9b17d0206b1"],
+Cell[CellGroupData[{
+Cell[1653, 47, 211, 4, 66, "Section",ExpressionUUID->"444e9146-0ae4-664c-a536-bcfbf339428b"],
+Cell[1867, 53, 7935, 184, 199, "Input",ExpressionUUID->"6b22484b-cbc3-4b40-b19f-8b53323293c5"]
+}, Open  ]]
+}, Open  ]]
 }
 ]
 *)
