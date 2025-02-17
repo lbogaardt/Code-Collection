@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[     21541,        521]
-NotebookOptionsPosition[     19505,        481]
-NotebookOutlinePosition[     19909,        497]
-CellTagsIndexPosition[     19866,        494]
+NotebookDataLength[     21821,        524]
+NotebookOptionsPosition[     19785,        484]
+NotebookOutlinePosition[     20189,        500]
+CellTagsIndexPosition[     20146,        497]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -369,8 +369,9 @@ Cell[BoxData[
    StripOnInput->False],
   Manipulate`InterpretManipulate[1]]], "Output",
  CellChangeTimes->{3.948790049599346*^9, 3.9487902742492905`*^9, 
-  3.9487920127662296`*^9, 3.9487921364495525`*^9},
- CellLabel->"Out[6]=",ExpressionUUID->"0da09d94-d2eb-8e45-9823-8620205b5bcc"]
+  3.9487920127662296`*^9, 3.9487921364495525`*^9, 3.9488012119796257`*^9, 
+  3.948802327778921*^9, 3.948802593679283*^9, 3.9488027110149384`*^9},
+ CellLabel->"Out[6]=",ExpressionUUID->"c94b5c10-7b6a-7646-b228-dc07d3657c02"]
 }, Open  ]],
 
 Cell[BoxData[
@@ -435,8 +436,9 @@ $CellContext`animationWithoutFluctuations, AnimationRepetitions -> Infinity];
   Evaluator->Automatic,
   Method->"Preemptive"]], "Output",
  CellChangeTimes->{3.948790071899458*^9, 3.948790295284153*^9, 
-  3.94879203301602*^9, 3.948792156815851*^9},
- CellLabel->"Out[9]=",ExpressionUUID->"e47ef15f-4d97-4149-a676-e9c072ec7190"]
+  3.94879203301602*^9, 3.948792156815851*^9, 3.948801245076973*^9, 
+  3.94880236174012*^9, 3.9488026201486664`*^9, 3.948802734550955*^9},
+ CellLabel->"Out[9]=",ExpressionUUID->"29e93e1c-2774-3447-a70b-c70b9b0a9cf9"]
 }, Open  ]],
 
 Cell[CellGroupData[{
@@ -473,8 +475,9 @@ $CellContext`animationWithFluctuations, AnimationRepetitions -> Infinity];
   Evaluator->Automatic,
   Method->"Preemptive"]], "Output",
  CellChangeTimes->{3.9487900719327908`*^9, 3.9487902952996693`*^9, 
-  3.948792033033989*^9, 3.9487921568325424`*^9},
- CellLabel->"Out[10]=",ExpressionUUID->"de8cb8c7-c257-2043-9b04-1d7b9af5b4b5"]
+  3.948792033033989*^9, 3.9487921568325424`*^9, 3.9488012450859604`*^9, 
+  3.948802361761814*^9, 3.948802620169695*^9, 3.948802734562958*^9},
+ CellLabel->"Out[10]=",ExpressionUUID->"87ea6704-21f8-7d49-9e53-ff828b07ef16"]
 }, Open  ]]
 }, Open  ]]
 }, Open  ]]
@@ -509,17 +512,17 @@ Cell[3728, 103, 1032, 28, 28, "Input",ExpressionUUID->"6e9b9399-cbca-4467-b819-2
 Cell[4763, 133, 6739, 157, 199, "Input",ExpressionUUID->"093dbf3d-06b7-5f4f-ad89-e28d5d3a615e"],
 Cell[CellGroupData[{
 Cell[11527, 294, 1856, 34, 28, "Input",ExpressionUUID->"1b1ffde1-d6d9-43f4-9d44-35101eb91014"],
-Cell[13386, 330, 2190, 42, 438, "Output",ExpressionUUID->"0da09d94-d2eb-8e45-9823-8620205b5bcc"]
+Cell[13386, 330, 2285, 43, 438, "Output",ExpressionUUID->"c94b5c10-7b6a-7646-b228-dc07d3657c02"]
 }, Open  ]],
-Cell[15591, 375, 541, 13, 28, "Input",ExpressionUUID->"af8c7058-bfdf-9a48-806f-7b36c28cb4a8"],
-Cell[16135, 390, 492, 12, 28, "Input",ExpressionUUID->"4606f45f-a5aa-fa4e-ba8b-650bf40a5402"],
+Cell[15686, 376, 541, 13, 28, "Input",ExpressionUUID->"af8c7058-bfdf-9a48-806f-7b36c28cb4a8"],
+Cell[16230, 391, 492, 12, 28, "Input",ExpressionUUID->"4606f45f-a5aa-fa4e-ba8b-650bf40a5402"],
 Cell[CellGroupData[{
-Cell[16652, 406, 832, 18, 28, "Input",ExpressionUUID->"e25c1741-3cac-5347-91e5-5f2bdd05e709"],
-Cell[17487, 426, 517, 12, 38, "Output",ExpressionUUID->"e47ef15f-4d97-4149-a676-e9c072ec7190"]
+Cell[16747, 407, 832, 18, 28, "Input",ExpressionUUID->"e25c1741-3cac-5347-91e5-5f2bdd05e709"],
+Cell[17582, 427, 609, 13, 38, "Output",ExpressionUUID->"29e93e1c-2774-3447-a70b-c70b9b0a9cf9"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[18041, 443, 902, 19, 28, "Input",ExpressionUUID->"b5be608f-b3ad-3d43-a22a-0ee1fc3b78f2"],
-Cell[18946, 464, 519, 12, 38, "Output",ExpressionUUID->"de8cb8c7-c257-2043-9b04-1d7b9af5b4b5"]
+Cell[18228, 445, 902, 19, 28, "Input",ExpressionUUID->"b5be608f-b3ad-3d43-a22a-0ee1fc3b78f2"],
+Cell[19133, 466, 612, 13, 38, "Output",ExpressionUUID->"87ea6704-21f8-7d49-9e53-ff828b07ef16"]
 }, Open  ]]
 }, Open  ]]
 }, Open  ]]

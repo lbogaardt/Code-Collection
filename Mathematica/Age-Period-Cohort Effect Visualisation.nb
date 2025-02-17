@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[     15205,        360]
-NotebookOptionsPosition[     14276,        335]
-NotebookOutlinePosition[     14680,        351]
-CellTagsIndexPosition[     14637,        348]
+NotebookDataLength[     15305,        362]
+NotebookOptionsPosition[     14376,        337]
+NotebookOutlinePosition[     14780,        353]
+CellTagsIndexPosition[     14737,        350]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -327,8 +327,10 @@ $CellContext`birthyear) (Pi/40)]}, {$CellContext`birthyear, 1900, 2030},
    StripOnInput->False],
   Manipulate`InterpretManipulate[1]]], "Output",
  CellChangeTimes->{3.9487899426496353`*^9, 3.948790012583025*^9, 
-  3.948790263349514*^9, 3.9487919746158886`*^9, 3.948792126607645*^9},
- CellLabel->"Out[1]=",ExpressionUUID->"8d826844-4c02-ec4b-93dc-591f1d53b4e2"]
+  3.948790263349514*^9, 3.9487919746158886`*^9, 3.948792126607645*^9, 
+  3.9488011510529366`*^9, 3.9488023130198174`*^9, 3.9488025489629498`*^9, 
+  3.948802696004221*^9},
+ CellLabel->"Out[1]=",ExpressionUUID->"eacb8ee0-e8d9-d844-9ea8-c00cfd0259c3"]
 }, Open  ]]
 }, Open  ]]
 }, Open  ]]
@@ -358,7 +360,7 @@ Cell[CellGroupData[{
 Cell[1649, 47, 211, 4, 66, "Section",ExpressionUUID->"444e9146-0ae4-664c-a536-bcfbf339428b"],
 Cell[CellGroupData[{
 Cell[1885, 55, 7953, 183, 199, "Input",ExpressionUUID->"6b22484b-cbc3-4b40-b19f-8b53323293c5"],
-Cell[9841, 240, 4395, 90, 882, "Output",ExpressionUUID->"8d826844-4c02-ec4b-93dc-591f1d53b4e2"]
+Cell[9841, 240, 4495, 92, 882, "Output",ExpressionUUID->"eacb8ee0-e8d9-d844-9ea8-c00cfd0259c3"]
 }, Open  ]]
 }, Open  ]]
 }, Open  ]]
