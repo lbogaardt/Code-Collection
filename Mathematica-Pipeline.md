@@ -1,4 +1,4 @@
-Back to [./](README.html).
+Back [up](./).
 
 # Mathematica Code Collection
 
