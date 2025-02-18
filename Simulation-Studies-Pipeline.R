@@ -37,7 +37,7 @@ if (length(missing.packages) > 0) {
 }
 
 rmarkdown.documents <- rmarkdown.documents %>%
-  filter(file.name == "Linear-Regression-Simulation-Study.Rmd")
+  filter(!file.name %in% c("P-Spline-Mixed-Effects-Model-Simulation-Study.Rmd", "Mixed-Effects-Linear-Regression-With-Random-Effect-on-Sigma-Simulation-Study.Rmd"))
 
 computation.time.per.file <- rmarkdown.documents %>%
   group_by(file.name) %>%
