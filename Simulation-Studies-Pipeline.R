@@ -4,7 +4,7 @@ library(tidyverse)
 
 rmarkdown.documents <- tibble(
   file.path = list.files(
-    path = "Simulation Studies",
+    path = "Simulation-Studies",
     pattern = "\\.Rmd?$",
     full.names = TRUE
   )
@@ -37,7 +37,7 @@ if (length(missing.packages) > 0) {
 }
 
 rmarkdown.documents <- rmarkdown.documents %>%
-  filter(file.name == "Linear Regression Simulation Study.Rmd")
+  filter(file.name == "Linear-Regression-Simulation-Study.Rmd")
 
 computation.time.per.file <- rmarkdown.documents %>%
   group_by(file.name) %>%
@@ -60,7 +60,7 @@ write(
     "Click [here](./) to go back.\n\n# Simulation Study Code Collection\n\nThe following studies are available:\n\n",
     paste(
       rmarkdown.documents %>%
-        mutate(x = paste0(" - [", file.name, "](", file.path, ")\n")) %>%
+        mutate(x = paste0("- [", gsub(".Rmd", ".html", file.name), "](", gsub(".Rmd", ".html", file.path), ")\n  - download the notebook *[", file.name, "](", file.path, ")*\n")) %>%
         pull(x),
       collapse = ""
     )
