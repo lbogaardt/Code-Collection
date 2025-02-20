@@ -1,5 +1,5 @@
 ---
-title: "P-Spline Mixed Effects Linear Regression Simulation Study"
+title: "P-Spline Mixed Effects Model"
 author: "Laurens Bogaardt"
 date: "2024-04-01"
 output:
@@ -30,6 +30,7 @@ library(lme4)
 library(gamlss)
 library(mgcv)
 library(matrixStats)
+set.seed(123)
 ```
 
 # Functions
@@ -248,7 +249,7 @@ estimate.model.and.get.coefficients.nlme <- function(data) {
     fixed.coefficient.5 = fixef(model)[[5]],
     sd.random.intercept = as.numeric(VarCorr(model)[[3]]),
     sd.error = model$sigma,
-    time = time[[3]]
+    computation.time = time[[3]]
   )
   return(result)
 }
@@ -273,7 +274,7 @@ estimate.model.and.get.coefficients.lme4 <- function(data) {
     fixed.coefficient.5 = fixef(model)[[5]],
     sd.random.intercept = sqrt(unlist(VarCorr(model)))[[1]],
     sd.error = summary(model)$sigma,
-    time = time[[3]]
+    computation.time = time[[3]]
   )
   return(result)
 }
@@ -338,7 +339,7 @@ estimate.model.and.get.coefficients.gamlss2 <- function(data) { # https://rdrr.i
     fixed.coefficient.5 = fixed.coef[[5]],
     sd.random.intercept = model[["mu.coefSmo"]][[2]][["sigb"]],
     sd.error = model[["mu.coefSmo"]][[2]][["sige"]] * exp(model$sigma.coefficients[[1]]),
-    time = time[[3]]
+    computation.time = time[[3]]
   )
   return(result)
 }
@@ -421,7 +422,7 @@ estimate.model.and.get.coefficients.optim <- function(data) {
     fixed.coefficient.5 = model$par[[5]],
     sd.random.intercept = exp(model$par[[6]]),
     sd.error = exp(model$par[[7]]),
-    time = time[[3]]
+    computation.time = time[[3]]
   )
   return(result)
 }
@@ -570,7 +571,7 @@ estimate.model.and.get.coefficients.gls <- function(data) {
     fixed.coefficient.5 = rowSums(fixed.coefficients)[[5]],
     sd.random.intercept = sd.random.intercept,
     sd.error = sd.error,
-    time = time[[3]]
+    computation.time = time[[3]]
   )
   return(result)
 }
@@ -604,7 +605,7 @@ The mixed effects linear regression takes various input parameters. These can al
 parameters <- tibble(
   parameter.set = seq(8),
   n.participants = c(200, 200, 800, 200, 200, 200, 200, 200),
-  n.measurements = c(4, 4, 4, 16, 4, 4, 4, 4),
+  n.measurements = c(4, 4, 4, 8, 4, 4, 4, 4),
   fixed.coefficient.1 = c(1, 1, 1, 1, -0.5, 1, 1, 1),
   fixed.coefficient.2 = c(-1, -1, -1, -1, 0.5, -1, -1, -1),
   fixed.coefficient.3 = c(2, 2, 2, 2, 1.5, 2, 2, 2),
@@ -624,7 +625,7 @@ For each set of input parameters, the generation and estimation procedure is app
 ```{r}
 estimated.parameters <- parameters %>%
   expand_grid(
-    run = seq(10)
+    run = seq(5)
   ) %>%
   reframe(
     generate.data(
@@ -749,7 +750,7 @@ ggplot(
     y = gls
   ),
   data = estimated.parameters %>%
-    select(-time) %>%
+    select(-computation.time) %>%
     pivot_longer(c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "fixed.coefficient.4", "fixed.coefficient.5", "sd.random.intercept", "sd.error")) %>%
     pivot_wider(names_from = "method"),
     alpha = 0.1
@@ -780,7 +781,7 @@ ggplot(
     y = optim
   ),
   data = estimated.parameters %>%
-    select(-time) %>%
+    select(-computation.time) %>%
     pivot_longer(c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "fixed.coefficient.4", "fixed.coefficient.5", "sd.random.intercept", "sd.error")) %>%
     pivot_wider(names_from = "method"),
     alpha = 0.1
@@ -811,7 +812,7 @@ ggplot(
     y = gls
   ),
   data = estimated.parameters %>%
-    select(-time) %>%
+    select(-computation.time) %>%
     pivot_longer(c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "fixed.coefficient.4", "fixed.coefficient.5", "sd.random.intercept", "sd.error")) %>%
     pivot_wider(names_from = "method"),
     alpha = 0.1
@@ -843,11 +844,11 @@ We have seen that all methods produce the same estimates. However, some methods 
 estimated.parameters %>%
   group_by(parameter.set, method) %>%
   summarise(
-    time = mean(time),
+    computation.time = mean(computation.time),
     .groups = "drop"
   ) %>%
   pivot_wider(
-    values_from = time,
+    values_from = computation.time,
     names_from = method
   )
 ```
@@ -858,7 +859,7 @@ The computation times can also be plot as densities.
 ggplot() +
   geom_density(
     mapping = aes(
-      x = time,
+      x = computation.time,
       col = method
     ),
     data = estimated.parameters
@@ -869,99 +870,45 @@ ggplot() +
   )
 ```
 
-# Visualise Estimated Parameters
-
-Given that the _lme4_ method was computationally fast, and that is gave the same estimates as all other methods, let's use this to estimate even more values for generated datasets.
-
-```{r}
-estimated.parameters <- parameters %>%
-  expand_grid(
-    run = seq(100)
-  ) %>%
-  reframe(
-    generate.data(
-      n.participants = n.participants,
-      n.measurements = n.measurements,
-      fixed.coefficient.1 = fixed.coefficient.1,
-      fixed.coefficient.2 = fixed.coefficient.2,
-      fixed.coefficient.3 = fixed.coefficient.3,
-      fixed.coefficient.4 = fixed.coefficient.4,
-      fixed.coefficient.5 = fixed.coefficient.5,
-      sd.random.intercept = sd.random.intercept,
-      sd.error = sd.error,
-      lambda = lambda
-    ) %>%
-      estimate.model.and.get.coefficients.gamlss2() %>%
-      as_tibble_row(),
-    .by = c(parameter.set, run)
-  )
-estimated.parameters
-```
-
-We now visualise the distribution of the estimated parameters, for each set of the input parameters. We can add a vertical line to indicate the value of the original, input parameter.
+# Visualise Curves
 
 ```{r}
 ggplot() +
-  geom_density(
+  geom_line(
     mapping = aes(
-      x = value,
-      y = after_stat(scaled),
-      fill = name
+      x = x,
+      y = y,
+      group = run
     ),
     data = estimated.parameters %>%
-      pivot_longer(
-        cols = matches("fixed.|sd.")
+      filter(!is.na(computation.time)) %>%
+      group_by(parameter.set, run, method) %>%
+      reframe(
+        x = seq(0, 1, 0.01),
+        y = c(bbase(x, xl = 0, xr = 1, nseg = 2, bdeg = 3) %*% c(fixed.coefficient.1, fixed.coefficient.2, fixed.coefficient.3, fixed.coefficient.4, fixed.coefficient.5))
       ),
-    alpha = 0.3
+    alpha = 0.4
   ) +
-  geom_vline(
+  geom_line(
     mapping = aes(
-      xintercept = value,
-      col = name
+      x = x,
+      y = y
     ),
     data = parameters %>%
-      pivot_longer(
-        cols = matches("fixed.|sd.")
-      )
+      group_by(parameter.set) %>%
+      reframe(
+        x = seq(0, 1, 0.01),
+        y = c(bbase(x, xl = 0, xr = 1, nseg = 2, bdeg = 3) %*% c(fixed.coefficient.1, fixed.coefficient.2, fixed.coefficient.3, fixed.coefficient.4, fixed.coefficient.5))
+      ),
+    colour = "red"
   ) +
   facet_grid(
-    cols = vars(name),
-    rows = vars(parameter.set),
+    rows = vars(method),
+    cols = vars(parameter.set),
     scales = "free"
-  )
-```
-
-# Visualise Parameter Correlations
-
-The estimated parameters may also correlate with each other. This is first visualised by listing the Pearson correlation in a matrix.
-
-```{r}
-ggplot(
-  mapping = aes(
-    x = parameter.1,
-    y = parameter.2,
-    fill = correlation,
-    label = sprintf("%.2f", correlation)
-  ),
-  data = estimated.parameters %>%
-    group_by(parameter.set) %>%
-    reframe(
-      expand_grid(
-        parameter.1 = c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "fixed.coefficient.4", "fixed.coefficient.5", "sd.random.intercept", "sd.error"),
-        parameter.2 = c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "fixed.coefficient.4", "fixed.coefficient.5", "sd.random.intercept", "sd.error")
-      ),
-      correlation = c(cor(data.frame(fixed.coefficient.1, fixed.coefficient.2, fixed.coefficient.3, fixed.coefficient.4, fixed.coefficient.5, sd.random.intercept, sd.error)))
-    )
-) +
-  geom_tile(alpha = 0.5) +
-  geom_text() +
-  scale_fill_viridis_c() +
-  guides(fill = "none") +
-  labs(
-    x = NULL,
-    y = NULL
   ) +
-  facet_wrap(
-    facets = vars(parameter.set)
+  labs(
+    x = "Exposure",
+    y = "Hazard rate"
   )
 ```
