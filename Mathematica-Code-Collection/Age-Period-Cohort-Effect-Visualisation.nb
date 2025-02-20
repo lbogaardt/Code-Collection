@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       154,          7]
-NotebookDataLength[     10674,        264]
-NotebookOptionsPosition[      9859,        241]
-NotebookOutlinePosition[     10279,        258]
-CellTagsIndexPosition[     10236,        255]
+NotebookDataLength[     10999,        271]
+NotebookOptionsPosition[     10092,        247]
+NotebookOutlinePosition[     10512,        264]
+CellTagsIndexPosition[     10469,        261]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -43,6 +43,12 @@ cross-sectional data.\
   3.94878188048394*^9, 3.948781882199524*^9}, {3.948781949599682*^9, 
   3.94878199081637*^9}},ExpressionUUID->"ac98724a-f9c0-b64f-b224-\
 b9b17d0206b1"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"SeedRandom", "[", "1234", "]"}], ";"}]], "Input",
+ CellChangeTimes->{{3.949052533486517*^9, 3.9490525398245068`*^9}},
+ CellLabel->"In[1]:=",ExpressionUUID->"51339e46-0e0a-d04b-a368-d52d33d045f3"],
 
 Cell[CellGroupData[{
 
@@ -235,7 +241,7 @@ Cell[BoxData[
   3.8647904090384693`*^9}, {3.864790449113488*^9, 3.864790449532473*^9}, {
   3.8647904964894843`*^9, 3.864790533677494*^9}, {3.864790579024499*^9, 
   3.864790620100512*^9}, {3.864793387751847*^9, 3.8647934633038683`*^9}},
- CellLabel->"In[1]:=",ExpressionUUID->"6b22484b-cbc3-4b40-b19f-8b53323293c5"]
+ CellLabel->"In[2]:=",ExpressionUUID->"6b22484b-cbc3-4b40-b19f-8b53323293c5"]
 }, Open  ]]
 }, Open  ]]
 },
@@ -261,9 +267,10 @@ Cell[CellGroupData[{
 Cell[576, 22, 257, 4, 96, "Title",ExpressionUUID->"6417cc02-277d-c645-a06c-272f1f5e625e"],
 Cell[836, 28, 304, 5, 52, "Subtitle",ExpressionUUID->"2c1563d9-608c-594e-b97d-0a5c9b8d7993"],
 Cell[1143, 35, 496, 9, 33, "Text",ExpressionUUID->"ac98724a-f9c0-b64f-b224-b9b17d0206b1"],
+Cell[1642, 46, 230, 4, 28, "Input",ExpressionUUID->"51339e46-0e0a-d04b-a368-d52d33d045f3"],
 Cell[CellGroupData[{
-Cell[1664, 48, 211, 4, 66, "Section",ExpressionUUID->"444e9146-0ae4-664c-a536-bcfbf339428b"],
-Cell[1878, 54, 7953, 183, 199, "Input",ExpressionUUID->"6b22484b-cbc3-4b40-b19f-8b53323293c5"]
+Cell[1897, 54, 211, 4, 66, "Section",ExpressionUUID->"444e9146-0ae4-664c-a536-bcfbf339428b"],
+Cell[2111, 60, 7953, 183, 199, "Input",ExpressionUUID->"6b22484b-cbc3-4b40-b19f-8b53323293c5"]
 }, Open  ]]
 }, Open  ]]
 }
