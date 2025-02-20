@@ -604,7 +604,7 @@ The mixed effects linear regression takes various input parameters. These can al
 ```{r}
 parameters <- tibble(
   parameter.set = seq(8),
-  n.participants = c(200, 200, 800, 200, 200, 200, 200, 200),
+  n.participants = c(100, 100, 400, 100, 100, 100, 100, 100),
   n.measurements = c(4, 4, 4, 8, 4, 4, 4, 4),
   fixed.coefficient.1 = c(1, 1, 1, 1, -0.5, 1, 1, 1),
   fixed.coefficient.2 = c(-1, -1, -1, -1, 0.5, -1, -1, -1),

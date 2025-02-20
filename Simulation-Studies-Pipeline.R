@@ -36,9 +36,6 @@ if (length(missing.packages) > 0) {
   cat("All required packages are installed.")
 }
 
-rmarkdown.documents <- rmarkdown.documents %>%
-  filter(!file.name %in% c("P-Spline-Mixed-Effects-Model-Simulation-Study.Rmd", "Mixed-Effects-Linear-Regression-With-Random-Effect-on-Sigma-Simulation-Study.Rmd"))
-
 computation.time.per.file <- rmarkdown.documents %>%
   group_by(file.name) %>%
   reframe(
@@ -57,7 +54,7 @@ computation.time.per.file
 
 write(
   x = paste0(
-    "Click [here](./) to go back.\n\n# Simulation Study Code Collection\n\nThe following studies are available:\n\n",
+    "Click [here](./) to go back.\n\n# Simulation Study\n\nThe following simulation studies are available:\n\n",
     paste(
       rmarkdown.documents %>%
         mutate(x = paste0("- [", gsub(".Rmd", ".html", file.name), "](", gsub(".Rmd", ".html", file.path), ")\n  - download the notebook *[", file.name, "](", file.path, ")*\n")) %>%
@@ -65,5 +62,5 @@ write(
       collapse = ""
     )
   ),
-  file = "Simulation-Studies-Pipeline2.md"
+  file = "Simulation-Studies.md"
 )

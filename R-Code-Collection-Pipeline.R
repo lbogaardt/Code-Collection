@@ -62,5 +62,5 @@ write(
       collapse = ""
     )
   ),
-  file = "Simulation-Studies-Pipeline2.md"
+  file = "R-Code-Collection.md"
 )
