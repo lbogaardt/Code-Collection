@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[     14464,        336]
-NotebookOptionsPosition[     12266,        288]
-NotebookOutlinePosition[     12870,        310]
-CellTagsIndexPosition[     12788,        305]
+NotebookDataLength[     14557,        337]
+NotebookOptionsPosition[     12359,        289]
+NotebookOutlinePosition[     12963,        311]
+CellTagsIndexPosition[     12881,        306]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -199,7 +199,8 @@ Cell[BoxData[
      RowBox[{"fileName", "=", 
       RowBox[{"FileNameJoin", "[", 
        RowBox[{
-        RowBox[{"NotebookDirectory", "[", "]"}], ",", "\"\<Mathematica\>\"", ",", 
+        RowBox[{"NotebookDirectory", "[", "]"}], 
+        ",", "\"\<Mathematica-Code-Collection\>\"", ",", 
         RowBox[{
          RowBox[{"FileBaseName", "[", "URL", "]"}], "<>", "\"\<.html\>\""}]}],
         "]"}]}], ";", 
@@ -223,12 +224,12 @@ embed(\\n\\\"\>\"", "<>", "URL",
 \\n)\\n</script>\\n</body>\\n</html>\>\""}]}], "]"}], ";", 
      RowBox[{"Close", "[", "file", "]"}], ";"}]}], "]"}]}]], "Input",
  CellChangeTimes->{{3.948785435799679*^9, 3.9487856154328938`*^9}, {
-  3.948785865532789*^9, 3.94878587653277*^9}, {3.948785944899454*^9, 
-  3.9487859505660286`*^9}, {3.9487860280826607`*^9, 3.9487860345161037`*^9}, {
-  3.948786203234062*^9, 3.948786257532648*^9}, {3.9487865560059814`*^9, 
-  3.948786616399233*^9}, {3.9487866821757393`*^9, 3.948786684799553*^9}, {
-  3.9488059766176376`*^9, 3.948806011140869*^9}, {3.9488060728913364`*^9, 
-  3.9488060968794746`*^9}},
+   3.948785865532789*^9, 3.94878587653277*^9}, {3.948785944899454*^9, 
+   3.9487859505660286`*^9}, {3.9487860280826607`*^9, 
+   3.9487860345161037`*^9}, {3.948786203234062*^9, 3.948786257532648*^9}, {
+   3.9487865560059814`*^9, 3.948786616399233*^9}, {3.9487866821757393`*^9, 
+   3.948786684799553*^9}, {3.9488059766176376`*^9, 3.948806011140869*^9}, {
+   3.9488060728913364`*^9, 3.9488060968794746`*^9}, 3.949053069471035*^9},
  CellLabel->"In[6]:=",ExpressionUUID->"47b0f7fa-50d7-984e-8866-66f56730c802"],
 
 Cell[BoxData[
@@ -267,7 +268,7 @@ available:\\n\\n\>\"", "<>",
           RowBox[{"FileBaseName", "[", "#", "]"}], 
           "<>", "\"\<.html)\\n  - download the notebook *[\>\"", "<>", 
           RowBox[{"FileBaseName", "[", "#", "]"}], 
-          "<>", "\"\<.nb](Mathematica/\>\"", "<>", 
+          "<>", "\"\<.nb](Mathematica-Code-Collection/\>\"", "<>", 
           RowBox[{"FileBaseName", "[", "#", "]"}], "<>", "\"\<.nb)*\\n\>\""}],
           "&"}], ",", "notebookURLs"}], "]"}], "]"}], "<>", "\"\<\\n\>\""}]}],
     "]"}], ";"}], "\[IndentingNewLine]", 
@@ -281,7 +282,7 @@ available:\\n\\n\>\"", "<>",
    3.9488049960317726`*^9}, {3.9488053405857162`*^9, 
    3.9488053493126507`*^9}, {3.948805527188202*^9, 3.9488055351268673`*^9}, {
    3.948878503308008*^9, 3.948878580492653*^9}, {3.948879094436943*^9, 
-   3.948879100585905*^9}, 3.9490524802835464`*^9},
+   3.948879100585905*^9}, 3.9490524802835464`*^9, 3.9490530598409176`*^9},
  CellLabel->"In[8]:=",ExpressionUUID->"6719b6ca-e64a-0146-b96d-c512bd7312e7"]
 }, Open  ]]
 }, Open  ]]
@@ -304,7 +305,7 @@ CellTagsIndex->{
 *)
 (*CellTagsIndex
 CellTagsIndex->{
- {"FileNames_templates", 12633, 299}
+ {"FileNames_templates", 12726, 300}
  }
 *)
 (*NotebookFileOutline
@@ -333,9 +334,9 @@ Cell[6647, 161, 842, 20, 28, "Input",ExpressionUUID->"df4b49dd-b932-1a4f-b173-c8
 }, Open  ]],
 Cell[CellGroupData[{
 Cell[7526, 186, 261, 4, 66, "Section",ExpressionUUID->"c6e7d915-eef0-2340-abb9-bedd594551b6"],
-Cell[7790, 192, 1998, 39, 161, "Input",ExpressionUUID->"47b0f7fa-50d7-984e-8866-66f56730c802"],
-Cell[9791, 233, 321, 5, 28, "Input",ExpressionUUID->"2b43c1a2-382a-b24f-b2bc-886cdb9dad26"],
-Cell[10115, 240, 2123, 44, 161, "Input",ExpressionUUID->"6719b6ca-e64a-0146-b96d-c512bd7312e7"]
+Cell[7790, 192, 2051, 40, 161, "Input",ExpressionUUID->"47b0f7fa-50d7-984e-8866-66f56730c802"],
+Cell[9844, 234, 321, 5, 28, "Input",ExpressionUUID->"2b43c1a2-382a-b24f-b2bc-886cdb9dad26"],
+Cell[10168, 241, 2163, 44, 161, "Input",ExpressionUUID->"6719b6ca-e64a-0146-b96d-c512bd7312e7"]
 }, Open  ]]
 }, Open  ]]
 }
