@@ -1,0 +1,132 @@
+---
+title: "2D Simulation Study"
+author: "Laurens Bogaardt"
+date: "2023-12-21"
+output:
+  html_document:
+    df_print: paged
+    fig_width: 10
+    fig.align: center
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    theme: united
+    code_folding: show
+---
+
+# Introduction
+
+```{r results = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(nlme)
+library(mvtnorm)
+```
+
+# Functions
+
+```{r}
+generate.and.estimate.data <- function(n, rho.1, rho.2, mu.alpha, mu.epsilon) {
+  get.sigma <- function(rho.1, rho.2, mu.alpha, mu.epsilon) {
+    matrix(
+      data = c(1, rho.1, mu.epsilon * sqrt((1 - rho.1) * (1 - rho.2)) + mu.alpha * sqrt(rho.1 * rho.2), mu.alpha * sqrt(rho.1 * rho.2), rho.1, 1, mu.alpha * sqrt(rho.1 * rho.2), mu.epsilon * sqrt((1 - rho.1) * (1 - rho.2)) + mu.alpha * sqrt(rho.1 * rho.2), mu.epsilon * sqrt((1 - rho.1) * (1 - rho.2)) + mu.alpha * sqrt(rho.1 * rho.2), mu.alpha * sqrt(rho.1 * rho.2), 1, rho.2, mu.alpha * sqrt(rho.1 * rho.2), mu.epsilon * sqrt((1 - rho.1) * (1 - rho.2)) + mu.alpha * sqrt(rho.1 * rho.2), rho.2, 1),
+      nrow = 4,
+      ncol = 4
+    )
+  }
+  y <- rmvnorm(
+    n = n,
+    mean = rep(0, 4),
+    sigma = get.sigma(rho.1, rho.2, mu.alpha, mu.epsilon)
+  )
+  log.likelihood <- function(par, sample.correlation) {
+    par <- pnorm(par)
+    sigma <- get.sigma(par[[1]], par[[2]], par[[3]], par[[4]])
+    -log(det(sigma)) / 2 - sum(diag(sample.correlation %*% solve(sigma))) / 2
+  }
+  model <- optim(
+    par = rep(0, 4),
+    fn = log.likelihood,
+    sample.correlation = cov(y),
+    control = list(fnscale = -1)
+  )
+  par <- pnorm(model$par)
+  result <- data.frame(
+    rho.1 = par[[1]],
+    rho.2 = par[[2]],
+    mu.alpha = par[[3]],
+    mu.epsilon = par[[4]]
+  )
+  return(result)
+}
+```
+
+# Parameters
+
+```{r}
+parameters <- tibble(
+  parameter.set = seq(6),
+  n = c(200, 800, 200, 200, 200, 200),
+  rho.1 = c(0.6, 0.6, 0.2, 0.6, 0.6, 0.6),
+  rho.2 = c(0.5, 0.5, 0.5, 0.3, 0.5, 0.5),
+  mu.alpha = c(0.4, 0.4, 0.4, 0.4, 0.8, 0.4),
+  mu.epsilon = c(0.3, 0.3, 0.3, 0.3, 0.3, 0.8)
+)
+parameters
+```
+
+# Estimation
+
+```{r}
+estimated.parameters <- parameters %>%
+  expand_grid(
+    run = seq(200)
+  ) %>%
+  rowwise() %>%
+  mutate(
+    generate.and.estimate.data(
+      n = n,
+      rho.1 = rho.1,
+      rho.2 = rho.2,
+      mu.alpha = mu.alpha,
+      mu.epsilon = mu.epsilon
+    )
+  ) %>%
+  ungroup()
+estimated.parameters
+```
+
+# Compare Methods
+
+
+# Visualise Estimated Parameters
+
+```{r}
+ggplot() +
+  geom_density(
+    mapping = aes(
+      x = value,
+      y = after_stat(scaled),
+      fill = name
+    ),
+    data = estimated.parameters %>%
+      pivot_longer(
+        cols = c("rho.1", "rho.2", "mu.alpha", "mu.epsilon")
+      ),
+    alpha = 0.3
+  ) +
+  geom_vline(
+    mapping = aes(
+      xintercept = value,
+      col = name
+    ),
+    data = parameters %>%
+      pivot_longer(
+        cols = c("rho.1", "rho.2", "mu.alpha", "mu.epsilon")
+      )
+  ) +
+  facet_grid(
+    cols = vars(name),
+    rows = vars(parameter.set),
+    scales = "free"
+  )
+```

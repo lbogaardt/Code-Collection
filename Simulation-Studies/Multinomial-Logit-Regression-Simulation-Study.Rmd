@@ -1,0 +1,153 @@
+---
+title: "Multinomial Logit Regression Simulation Study"
+author: "Laurens Bogaardt"
+date: "2023-06-07"
+output:
+  html_document:
+    df_print: paged
+    fig_width: 10
+    fig.align: center
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    theme: united
+    code_folding: show
+---
+
+# Introduction
+
+This document describes ...
+
+The document uses the packages _tidyverse_, _EnvStats_ and _VGAM_.
+
+```{r results = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(EnvStats)
+library(VGAM)
+```
+
+# Functions
+
+```{r}
+generate.and.estimate.multinomial.logit.regression <- function(n, intercept.1, slope.1, intercept.2, slope.2) {
+  x <- rnorm(n)
+  y <- apply(
+    data.frame(
+      a = revd(n, 0),
+      b = revd(n, intercept.1 + slope.1 * x),
+      c = revd(n, intercept.2 + slope.2 * x)
+    ),
+    1,
+    which.max
+  )
+  model <- vglm(y ~ 1 + x, family = multinomial(refLevel = 1))
+  result <- data.frame(
+    intercept.1 = coef(model)[[1]],
+    intercept.2 = coef(model)[[2]],
+    slope.1 = coef(model)[[3]],
+    slope.2 = coef(model)[[4]]
+  )
+  return(result)
+}
+```
+
+# Parameters
+
+```{r}
+parameters <- tibble(
+  parameter.set = seq(6),
+  n.data = c(200, 800, 200, 200, 200, 200),
+  intercept.1 = c(1, 1, -1, 1, 1, 1),
+  slope.1 = c(2, 2, 2, 0.5, 2, 2),
+  intercept.2 = c(1, 1, 1, 1, -1, 1),
+  slope.2 = c(2, 2, 2, 2, 2, 0.5)
+)
+parameters
+```
+
+# Estimation
+
+```{r}
+estimated.parameters <- parameters %>%
+  expand_grid(
+    run = seq(400)
+  ) %>%
+  rowwise() %>%
+  mutate(
+    generate.and.estimate.multinomial.logit.regression(
+      n = n.data,
+      intercept.1 = intercept.1,
+      slope.1 = slope.1,
+      intercept.2 = intercept.2,
+      slope.2 = slope.2
+    )
+  ) %>%
+  ungroup()
+estimated.parameters
+```
+
+# Visualise Estimated Paramaters
+
+```{r}
+ggplot() +
+  geom_density(
+    mapping = aes(
+      x = value,
+      y = after_stat(scaled),
+      fill = name
+    ),
+    data = estimated.parameters %>%
+      pivot_longer(
+        cols = c("intercept.1", "slope.1", "intercept.2", "slope.2")
+      ),
+    alpha = 0.3
+  ) +
+  geom_vline(
+    mapping = aes(
+      xintercept = value,
+      col = name
+    ),
+    data = parameters %>%
+      pivot_longer(
+        cols = c("intercept.1", "slope.1", "intercept.2", "slope.2")
+      )
+  ) +
+  facet_grid(
+    cols = vars(name),
+    rows = vars(parameter.set),
+    scales = "free"
+  )
+```
+
+# Visualise Parameter Correlations
+
+```{r}
+ggplot(
+  mapping = aes(
+    x = parameter.1,
+    y = parameter.2,
+    fill = correlation,
+    label = sprintf("%.2f", correlation)
+  ),
+  data = estimated.parameters %>%
+    group_by(parameter.set) %>%
+    reframe(
+      expand_grid(
+        parameter.1 = c("intercept.1", "slope.1", "intercept.2", "slope.2"),
+        parameter.2 = c("intercept.1", "slope.1", "intercept.2", "slope.2")
+      ),
+      correlation = c(cor(data.frame(intercept.1, slope.1, intercept.2, slope.2)))
+    )
+) +
+  geom_tile(alpha = 0.5) +
+  geom_text() +
+  scale_fill_viridis_c() +
+  guides(fill = "none") +
+  labs(
+    x = NULL,
+    y = NULL
+  ) +
+  facet_wrap(
+    facets = vars(parameter.set)
+  )
+```

@@ -1,0 +1,301 @@
+---
+title: "Logit Regresson Simulation Study"
+author: "Laurens Bogaardt"
+date: "2023-06-08"
+output:
+  html_document:
+    df_print: paged
+    fig_width: 10
+    fig.align: center
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    theme: united
+    code_folding: show
+---
+
+# Introduction
+
+This document describes ...
+
+The document uses the package _tidyverse_.
+
+```{r results = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+```
+
+# Functions
+
+```{r}
+generate.and.estimate.logit.regression.1 <- function(n, intercept, slope) {
+  x <- rnorm(n)
+  y <- intercept + slope * x
+  p <- plogis(y)
+  c <- sapply(p, rbinom, n = 1, size = 1)
+  model <- glm(
+    formula = c ~ 1 + x,
+    family = binomial(link = "logit")
+  )
+  result <- data.frame(
+    intercept = coef(model)[[1]],
+    slope = coef(model)[[2]]
+  )
+  return(result)
+}
+```
+
+```{r}
+generate.and.estimate.logit.regression.2 <- function(n, intercept, slope) {
+  x <- rnorm(n)
+  y <- intercept + slope * x + rlogis(n)
+  c <- y > 0
+  model <- glm(
+    formula = c ~ 1 + x,
+    family = binomial(link = "logit")
+  )
+  result <- data.frame(
+    intercept = coef(model)[[1]],
+    slope = coef(model)[[2]]
+  )
+  return(result)
+}
+```
+
+# Parameters
+
+```{r}
+parameters <- tibble(
+  parameter.set = seq(4),
+  n.data = c(200, 800, 200, 200),
+  intercept = c(1, 1, -0.5, 1),
+  slope = c(0.5, 0.5, 0.5, -0.25)
+)
+parameters
+```
+
+# Estimation
+
+```{r}
+estimated.parameters.1 <- parameters %>%
+  expand_grid(
+    run = seq(200)
+  ) %>%
+  rowwise() %>%
+  mutate(
+    generate.and.estimate.logit.regression.1(
+      n = n.data,
+      intercept = intercept,
+      slope = slope
+    )
+  ) %>%
+  ungroup()
+estimated.parameters.1
+```
+
+```{r}
+estimated.parameters.2 <- parameters %>%
+  expand_grid(
+    run = seq(400)
+  ) %>%
+  rowwise() %>%
+  mutate(
+    generate.and.estimate.logit.regression.2(
+      n = n.data,
+      intercept = intercept,
+      slope = slope
+    )
+  ) %>%
+  ungroup()
+estimated.parameters.2
+```
+
+# Visualise Estimated Paramaters
+
+```{r}
+ggplot() +
+  geom_density(
+    mapping = aes(
+      x = value,
+      fill = name
+    ),
+    data = estimated.parameters.1 %>%
+      pivot_longer(
+        cols = c("intercept", "slope")
+      ),
+    alpha = 0.3
+  ) +
+  geom_vline(
+    mapping = aes(
+      xintercept = value,
+      col = name
+    ),
+    data = parameters %>%
+      pivot_longer(
+        cols = c("intercept", "slope")
+      )
+  ) +
+  facet_grid(
+    cols = vars(name),
+    rows = vars(parameter.set),
+    scales = "free"
+  )
+```
+
+```{r}
+ggplot() +
+  geom_density(
+    mapping = aes(
+      x = value,
+      y = after_stat(scaled),
+      fill = name
+    ),
+    data = estimated.parameters.2 %>%
+      pivot_longer(
+        cols = c("intercept", "slope")
+      ),
+    alpha = 0.3
+  ) +
+  geom_vline(
+    mapping = aes(
+      xintercept = value,
+      col = name
+    ),
+    data = parameters %>%
+      pivot_longer(
+        cols = c("intercept", "slope")
+      )
+  ) +
+  facet_grid(
+    cols = vars(name),
+    rows = vars(parameter.set),
+    scales = "free"
+  )
+```
+
+# Visualise Parameter Correlations
+
+```{r}
+ggplot(
+  mapping = aes(
+    x = parameter.1,
+    y = parameter.2,
+    fill = correlation,
+    label = sprintf("%.2f", correlation)
+  ),
+  data = estimated.parameters.1 %>%
+    group_by(parameter.set) %>%
+    reframe(
+      expand_grid(
+        parameter.1 = c("intercept", "slope"),
+        parameter.2 = c("intercept", "slope")
+      ),
+      correlation = c(cor(data.frame(intercept, slope)))
+    )
+) +
+  geom_tile(alpha = 0.5) +
+  geom_text() +
+  scale_fill_viridis_c() +
+  guides(fill = "none") +
+  labs(
+    x = NULL,
+    y = NULL
+  ) +
+  facet_wrap(
+    facets = vars(parameter.set)
+  )
+```
+
+```{r}
+ggplot(
+  mapping = aes(
+    x = parameter.1,
+    y = parameter.2,
+    fill = correlation,
+    label = sprintf("%.2f", correlation)
+  ),
+  data = estimated.parameters.2 %>%
+    group_by(parameter.set) %>%
+    reframe(
+      expand_grid(
+        parameter.1 = c("intercept", "slope"),
+        parameter.2 = c("intercept", "slope")
+      ),
+      correlation = c(cor(data.frame(intercept, slope)))
+    )
+) +
+  geom_tile(alpha = 0.5) +
+  geom_text() +
+  scale_fill_viridis_c() +
+  guides(fill = "none") +
+  labs(
+    x = NULL,
+    y = NULL
+  ) +
+  facet_wrap(
+    facets = vars(parameter.set)
+  )
+```
+
+```{r}
+ggplot(
+  mapping = aes(
+    x = intercept,
+    y = slope
+  ),
+  data = estimated.parameters.1,
+    alpha = 0.1
+) +
+  geom_point() +
+  geom_smooth(
+    formula = y ~ x,
+    method = "lm"
+  ) +
+  geom_vline(
+    mapping = aes(
+      xintercept = intercept
+    ),
+    data = parameters
+  ) +
+  geom_hline(
+    mapping = aes(
+      yintercept = slope
+    ),
+    data = parameters
+  ) +
+  facet_wrap(
+    facets = vars(parameter.set),
+    scales = "free"
+  )
+```
+
+```{r}
+ggplot(
+  mapping = aes(
+    x = intercept,
+    y = slope
+  ),
+  data = estimated.parameters.2,
+    alpha = 0.1
+) +
+  geom_point() +
+  geom_smooth(
+    formula = y ~ x,
+    method = "lm"
+  ) +
+  geom_vline(
+    mapping = aes(
+      xintercept = intercept
+    ),
+    data = parameters
+  ) +
+  geom_hline(
+    mapping = aes(
+      yintercept = slope
+    ),
+    data = parameters
+  ) +
+  facet_wrap(
+    facets = vars(parameter.set),
+    scales = "free"
+  )
+```

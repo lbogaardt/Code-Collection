@@ -1,0 +1,415 @@
+---
+title: "Survival Analysis with Weibull Distribution Simulation Study"
+author: "Laurens Bogaardt"
+date: "2024-10-16"
+output:
+  html_document:
+    df_print: paged
+    fig_width: 10
+    fig.align: center
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    theme: united
+    code_folding: show
+---
+
+<style>
+body{text-align: justify}
+</style>
+
+# Introduction
+
+This document describes a simulation study of a survival analysis with a Weibull distribution. The document is structured as follows. In section [Theory and Functions], we will look into the mathematics of the  model and define several functions which we will use throughout the remainder of the document. In section [Define Parameters], we create a table with various parameter values for each of the model's parameters. In section [Estimate All Models], we generate multiple datasets which are subsequently analysed to estimate the model's parameters via maximum likelihood. Various estimation methods are used and compared. All methods result in the same estimates but some are computationally faster than others. This is checked in section [Compare Models]. After having verified that all models produce the same estimates, the fastest performing model is run again in section [Estimate Fastest Model]. Finally, in sections [Visualise Estimated Parameters] and [Visualise Parameter Correlations], the estimated parameter values are compared to the input defined in section [Define Parameters].
+
+Before we begin, we need to load the packages _tidyverse_ and _flexsurv_. And we set a seed to ensure that all runs of this document produce the same output.
+
+```{r results = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(flexsurv)
+set.seed(555)
+```
+
+# Theory and Functions
+
+It is assumes a hazard function which increases linearly by time, parametrised by:
+
+ 1. an intercept
+ 2. a slope for time
+ 3. a slope for the covariate
+
+```{r}
+f.h <- function(t, a, b) { exp(a + b * t) }
+f.surv <- function(t, a, b) { exp(-(exp(a + b * t) - exp(a)) / b) }
+f.dens <- function(t, a, b) { exp(a + b * t - (exp(a + b * t) - exp(a)) / b) }
+f.cum <- function(t, a, b) { 1 - exp(-(exp(a + b * t) - exp(a)) / b) }
+f.cum.inv <- function(q, a, b) { (log(exp(a) + b * log(1 / (1 - q))) - a) / b }
+```
+
+```{r}
+a <- -10
+b <- 0.1
+```
+
+```{r}
+ggplot() +
+  stat_function(
+    fun = f.h,
+    args = list(
+      a = a,
+      b = b
+    )
+  ) +
+  xlim(0, 100)
+```
+
+```{r}
+ggplot() +
+  stat_function(
+    fun = f.surv,
+    args = list(
+      a = a,
+      b = b
+    )
+  ) +
+  xlim(0, 100)
+```
+
+```{r}
+ggplot() +
+  stat_function(
+    fun = f.dens,
+    args = list(
+      a = a,
+      b = b
+    )
+  ) +
+  xlim(0, 100)
+```
+
+```{r}
+ggplot() +
+  stat_function(
+    fun = f.cum,
+    args = list(
+      a = a,
+      b = b
+    )
+  ) +
+  xlim(0, 100)
+```
+
+```{r}
+ggplot() +
+  stat_function(
+    fun = f.cum.inv,
+    args = list(
+      a = a,
+      b = b
+    )
+  ) +
+  xlim(0, 1)
+```
+
+```{r}
+ggplot() +
+  geom_density(
+    mapping = aes(
+      x = f.cum.inv(runif(10 ^ 5), a, b)
+    )
+  ) +
+  stat_function(
+    fun = f.dens,
+    args = list(
+      a = a,
+      b = b
+    ),
+    colour = "red"
+  )
+```
+
+The following function generates data for the model described in the [Introduction]. The subsequent functions estimate the parameters which best fit these data assuming the same model. This is done using multiple estimation methods which should all result in the same maximum likelihood estimates. This is verified in section [Compare Estimates].
+
+```{r}
+generate.data <- function(n.participants, intercept, slope.time, slope.x, interaction.time.x) {
+  participant.id <- seq(n.participants)
+  x <- runif(n.participants)
+  y <- mapply(f.cum.inv, q = runif(n.participants), a = intercept + slope.x * x, b = slope.time + interaction.time.x * x)
+  data <- data.frame(
+    n.participants = n.participants,
+    intercept = intercept,
+    slope.time = slope.time,
+    slope.x = slope.x,
+    interaction.time.x = interaction.time.x,
+    participant.id = participant.id,
+    x = x,
+    y = y
+  )
+  return(data)
+}
+```
+
+The following estimation method makes use of the _flexsurvreg_ function from the package _flexsurv_.
+
+```{r}
+estimate.model.and.get.coefficients.flexsurv <- function(data) {
+  ptm <- proc.time()
+  model <- flexsurvreg(
+    formula = Surv(y) ~ 1 + x + shape(x),
+    data = data,
+    dist = "gompertz"
+  )
+  time <- proc.time() - ptm
+  result <- c(
+    intercept = coef(model)[[2]],
+    slope.time = coef(model)[[1]],
+    slope.x = coef(model)[[3]],
+    interaction.time.x = coef(model)[[4]],
+    time = time[[3]]
+  )
+  return(result)
+}
+```
+
+```{r}
+estimate.model.and.get.coefficients.coxph <- function(data) {
+  ptm <- proc.time()
+  model <- coxph(
+    formula = Surv(y) ~ 1 + x + tt(x),
+    data = data,
+    tt = function(x, t, ...) { x * t }
+  )
+  time <- proc.time() - ptm
+  result <- c(
+    intercept = 0,
+    slope.time = 0,
+    slope.x = coef(model)[[1]],
+    interaction.time.x = coef(model)[[2]],
+    time = time[[3]]
+  )
+  return(result)
+}
+```
+
+The following function combines all previous estimation functions to be able to estimate and compare model parameters on the same input dataset.
+
+```{r}
+estimate.all.models.and.get.coefficients <- function(data) {
+  result <- data.frame(
+    method = c("flexsurv", "coxph"),
+    rbind(
+      estimate.model.and.get.coefficients.flexsurv(data),
+      estimate.model.and.get.coefficients.coxph(data)
+    )
+  )
+  return(result)
+}
+```
+
+# Define Parameters
+
+The mixed effects takes various input parameters. These can all be varied, one by one, which results in a table of input parameters on which the simulation study is performed.
+
+```{r}
+parameters <- tibble(
+  parameter.set = seq(6),
+  n.participants = c(500, 2000, 500, 500, 500, 500),
+  intercept = c(1, 1, 2, 1, 1, 1),
+  slope.time = c(1, 1, 1, 2, 1, 1),
+  slope.x = c(1, 1, 1, 1, 2, 1),
+  interaction.time.x = c(-1, -1, -1, -1, -1, -2)
+)
+parameters
+```
+
+# Estimate All Models
+
+For each set of input parameters, the generation and estimation procedure is applied multiple times. Every run results in slightly different estimates but all methods should produce the same values. These are compared below.
+
+```{r}
+estimated.parameters <- parameters %>%
+  expand_grid(
+    run = seq(10)
+  ) %>%
+  reframe(
+    generate.data(
+      n.participants = n.participants,
+      intercept = intercept,
+      slope.time = slope.time,
+      slope.x = slope.x,
+      interaction.time.x = interaction.time.x
+    ) %>%
+      estimate.all.models.and.get.coefficients(),
+    .by = c(parameter.set, run)
+  )
+estimated.parameters
+```
+
+# Compare Models {.tabset .tabset-pills}
+
+The output of the simulation study contains estimated parameters for all the included methods. These should all give the same result. An easy way to check this is to plot the estimates of two methods together, one on the x-axis and one on the y-axis. The points should fall on a 45-degree line.
+
+```{r, results = "asis"}
+for (model.pairs in combn(unique(estimated.parameters$method), 2, simplify = FALSE)) {
+  cat("\n\n## ", model.pairs[[1]], " vs ", model.pairs[[2]], " {.tabset .tabset-pills}\n")
+  print(
+    ggplot(
+      mapping = aes(
+        x = !!sym(model.pairs[[1]]),
+        y = !!sym(model.pairs[[2]])
+      ),
+      data = estimated.parameters %>%
+        filter(method %in% model.pairs) %>%
+        select(-time) %>%
+        pivot_longer(c("intercept", "slope.time", "slope.x", "interaction.time.x")) %>%
+        pivot_wider(names_from = "method"),
+        alpha = 0.1
+    ) +
+      geom_point() +
+      geom_smooth(
+        formula = y ~ x,
+        method = "lm",
+        col = "green"
+      ) +
+      geom_abline(
+        intercept = 0,
+        slope = 1
+      ) +
+      facet_grid(
+        cols = vars(name),
+        rows = vars(parameter.set),
+        scales = "free"
+      )
+  )
+}
+```
+
+# {.unlisted .unnumbered}
+
+All methods give the same result. Only the _optim_ method, which estimated the model using a custom likelihood function, gave slightly different result. This is probably due to the low resolution of the numerical integration used in this method, and not due to a fundamental difference in the model.
+
+We have seen that all methods produce the same estimates. However, some methods are computationally faster than others. The table below provides the mean estimation time.
+
+```{r}
+estimated.parameters %>%
+  group_by(parameter.set, method) %>%
+  summarise(
+    time = mean(time),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    values_from = time,
+    names_from = method
+  )
+```
+
+The computation times can also be plot as densities.
+
+```{r}
+ggplot() +
+  geom_density(
+    mapping = aes(
+      x = time,
+      col = method
+    ),
+    data = estimated.parameters
+  ) +
+  facet_wrap(
+    facets = ~ method,
+    scales = "free_y"
+  )
+```
+
+# Estimate Fastest Model
+
+Given that the _nlme_ method was computationally fast, and that is gave the same estimates as all other methods, let's use this to estimate even more values for generated datasets.
+
+```{r}
+estimated.parameters <- parameters %>%
+  expand_grid(
+    run = seq(500)
+  ) %>%
+  reframe(
+    generate.data(
+      n.participants = n.participants,
+      intercept = intercept,
+      slope.time = slope.time,
+      slope.x = slope.x,
+      interaction.time.x = interaction.time.x
+    ) %>%
+      estimate.model.and.get.coefficients.flexsurv() %>%
+      as_tibble_row(),
+    .by = c(parameter.set, run)
+  )
+estimated.parameters
+```
+
+# Visualise Estimated Parameters
+
+We now visualise the distribution of the estimated parameters, for each set of the input parameters. We can add a vertical line to indicate the value of the original, input parameter.
+
+```{r}
+ggplot() +
+  geom_density(
+    mapping = aes(
+      x = value,
+      y = after_stat(scaled),
+      fill = name
+    ),
+    data = estimated.parameters %>%
+      pivot_longer(
+        cols = c("intercept", "slope.time", "slope.x", "interaction.time.x")
+      ),
+    alpha = 0.3
+  ) +
+  geom_vline(
+    mapping = aes(
+      xintercept = value,
+      col = name
+    ),
+    data = parameters %>%
+      pivot_longer(
+        cols = c("intercept", "slope.time", "slope.x", "interaction.time.x")
+      )
+  ) +
+  facet_grid(
+    cols = vars(name),
+    rows = vars(parameter.set),
+    scales = "free"
+  )
+```
+
+# Visualise Parameter Correlations
+
+The estimated parameters may also correlate with each other. This is first visualised by listing the Pearson correlation in a matrix.
+
+```{r}
+ggplot(
+  mapping = aes(
+    x = parameter.1,
+    y = parameter.2,
+    fill = correlation,
+    label = sprintf("%.2f", correlation)
+  ),
+  data = estimated.parameters %>%
+    group_by(parameter.set) %>%
+    reframe(
+      expand_grid(
+        parameter.1 = c("intercept", "slope.time", "slope.x", "interaction.time.x"),
+        parameter.2 = c("intercept", "slope.time", "slope.x", "interaction.time.x")
+      ),
+      correlation = c(cor(data.frame(intercept, slope.time, slope.x, interaction.time.x)))
+    )
+) +
+  geom_tile(alpha = 0.5) +
+  geom_text() +
+  scale_fill_viridis_c() +
+  guides(fill = "none") +
+  labs(
+    x = NULL,
+    y = NULL
+  ) +
+  facet_wrap(
+    facets = vars(parameter.set)
+  )
+```

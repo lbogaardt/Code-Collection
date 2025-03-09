@@ -1,0 +1,145 @@
+---
+title: "Ordinal Logit Regression Simulation Study"
+author: "Laurens Bogaardt"
+date: "2023-06-12"
+output:
+  html_document:
+    df_print: paged
+    fig_width: 10
+    fig.align: center
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    theme: united
+    code_folding: show
+---
+
+# Introduction
+
+This document describes ...
+
+The document uses the packages _tidyverse_ and _ordinal_.
+
+```{r results = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(ordinal)
+```
+
+# Functions
+
+```{r}
+generate.and.estimate.ordinal.logit.regression <- function(n, intercept, slope, threshold) {
+  x <- rnorm(n)
+  y <- intercept + slope * x + rlogis(n)
+  class.membership <<- as.factor(as.numeric(y > 0) + as.numeric(y > threshold) + as.numeric(y > 1))
+  fit <- clm(
+    formula = class.membership ~ 1 + x,
+    link = "logit"
+  )
+  result <- data.frame(
+    intercept = -coef(fit)[[1]],
+    slope = coef(fit)[[4]] / (coef(fit)[[3]] - coef(fit)[[1]]),
+    threshold = (coef(fit)[[2]] - coef(fit)[[1]]) / (coef(fit)[[3]] - coef(fit)[[1]])
+  )
+  return(result)
+}
+```
+
+# Parameters
+
+```{r}
+parameters <- tibble(
+  parameter.set = seq(5),
+  n.data = c(1000, 4000, 1000, 1000, 1000),
+  intercept = c(1, 1, -1, 1, 1),
+  slope = c(2, 2, 2, 0.5, 2),
+  threshold = c(0.3, 0.3, 0.3, 0.3, 0.8)
+)
+parameters
+```
+
+# Estimation
+
+```{r}
+estimated.parameters <- parameters %>%
+  expand_grid(
+    run = seq(400)
+  ) %>%
+  rowwise() %>%
+  mutate(
+    generate.and.estimate.ordinal.logit.regression(
+      n = n.data,
+      intercept = intercept,
+      slope = slope,
+      threshold = threshold
+    )
+  ) %>%
+  ungroup()
+estimated.parameters
+```
+
+# Visualise Estimated Paramaters
+
+```{r}
+ggplot() +
+  geom_density(
+    mapping = aes(
+      x = value,
+      y = after_stat(scaled),
+      fill = name
+    ),
+    data = estimated.parameters %>%
+      pivot_longer(
+        cols = c("intercept", "slope", "threshold")
+      ),
+    alpha = 0.3
+  ) +
+  geom_vline(
+    mapping = aes(
+      xintercept = value,
+      col = name
+    ),
+    data = parameters %>%
+      pivot_longer(
+        cols = c("intercept", "slope", "threshold")
+      )
+  ) +
+  facet_grid(
+    cols = vars(name),
+    rows = vars(parameter.set),
+    scales = "free"
+  )
+```
+
+# Visualise Parameter Correlations
+
+```{r}
+ggplot(
+  mapping = aes(
+    x = parameter.1,
+    y = parameter.2,
+    fill = correlation,
+    label = sprintf("%.2f", correlation)
+  ),
+  data = estimated.parameters %>%
+    group_by(parameter.set) %>%
+    reframe(
+      expand_grid(
+        parameter.1 = c("intercept", "slope", "threshold"),
+        parameter.2 = c("intercept", "slope", "threshold")
+      ),
+      correlation = c(cor(data.frame(intercept, slope, threshold)))
+    )
+) +
+  geom_tile(alpha = 0.5) +
+  geom_text() +
+  scale_fill_viridis_c() +
+  guides(fill = "none") +
+  labs(
+    x = NULL,
+    y = NULL
+  ) +
+  facet_wrap(
+    facets = vars(parameter.set)
+  )
+```

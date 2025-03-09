@@ -1,0 +1,609 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 11.0' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     25945,        601]
+NotebookOptionsPosition[     24253,        564]
+NotebookOutlinePosition[     24673,        581]
+CellTagsIndexPosition[     24630,        578]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell["Autoregressive Process with Non-Normal Innovations", "Title",
+ CellChangeTimes->{{3.777372445226922*^9, 3.7773724527775154`*^9}, {
+  3.77839228895363*^9, 
+  3.7783923036644297`*^9}},ExpressionUUID->"1fbcc6ad-5826-6547-84cc-\
+2550cf264d6c"],
+
+Cell["Laurens Bogaardt | 2019-09-13", "Subtitle",
+ CellChangeTimes->{{3.7773724556479893`*^9, 3.7773724743060675`*^9}, {
+   3.7773728665417023`*^9, 3.7773728683357487`*^9}, 
+   3.9491316042509785`*^9},ExpressionUUID->"64746cef-a096-6a42-9cc6-\
+6850e9ce4ec0"],
+
+Cell["\<\
+In an autoregressive process, at every new time step, a small amount of error \
+is added to the previous value. This is sometimes called an \
+\[OpenCurlyQuote]innovation\[CloseCurlyQuote] or a \[OpenCurlyQuote]shock\
+\[CloseCurlyQuote]. The effect of a single shock decays exponentially over \
+time while the overall effect is the sum of all previous shocks, resulting in \
+a meandering time series with temporal autocorrelation. In a first-order \
+autoregressive process, each subsequent value only depends on the previous \
+value, making it a Markov process which describes the step-by-step evolution \
+of a continuous variable. In the limit of small time differences between \
+steps, when many small shocks accumulate, the first-order autoregressive \
+process becomes the Ornstein\[Dash]Uhlenbeck process. Then, the central limit \
+theorem ensures that the resulting values follow a normal distribution. If \
+shocks themselves are sampled from a normal distribution, this holds for any \
+time difference. However, for larger time steps and non-normal innovations, \
+the resulting distribution may also deviate from normal. This document \
+examines the resulting distribution and time series.\
+\>", "Text",
+ CellChangeTimes->{{3.948778457897154*^9, 3.948778463015894*^9}, {
+  3.9487785069023094`*^9, 3.948778571033579*^9}, {3.9487786119160824`*^9, 
+  3.9487787055997257`*^9}, {3.9487787509729137`*^9, 
+  3.948778752299238*^9}},ExpressionUUID->"ddeb7475-4ca9-e040-aa84-\
+3cad203183d0"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"SeedRandom", "[", "1234", "]"}], ";"}]], "Input",
+ CellLabel->"In[1]:=",ExpressionUUID->"aa0812a0-e810-7344-ac9e-b5d0ca41f922"],
+
+Cell[CellGroupData[{
+
+Cell["Initialisation", "Section",
+ CellChangeTimes->{{3.7783957100480323`*^9, 
+  3.77839572217031*^9}},ExpressionUUID->"0bcc5949-a970-de48-acfc-\
+69ed65da4e6c"],
+
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"importPackage", "=", 
+   RowBox[{"Function", "[", 
+    RowBox[{
+     RowBox[{"{", "path", "}"}], ",", 
+     RowBox[{"Module", "[", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{"notebook", "=", 
+         RowBox[{"NotebookOpen", "[", 
+          RowBox[{"path", ",", 
+           RowBox[{"CellContext", "\[Rule]", "\"\<Global`\>\""}], ",", 
+           RowBox[{"Visible", "\[Rule]", "False"}]}], "]"}]}], "}"}], ",", 
+       RowBox[{
+        RowBox[{"NotebookEvaluate", "[", 
+         RowBox[{"notebook", ",", 
+          RowBox[{"InsertResults", "\[Rule]", "False"}], ",", 
+          RowBox[{
+          "EvaluationElements", "\[Rule]", "\"\<InitializationCell\>\""}]}], 
+         "]"}], ";", 
+        RowBox[{"NotebookClose", "[", "notebook", "]"}]}]}], "]"}]}], "]"}]}],
+   ";"}]], "Input",
+ CellChangeTimes->{{3.7783954304748554`*^9, 3.7783954450456295`*^9}, {
+  3.7783954985081997`*^9, 3.7783955109729195`*^9}, {3.7783955633902636`*^9, 
+  3.77839561044107*^9}, {3.778396808577148*^9, 3.778396835190748*^9}},
+ CellLabel->"In[2]:=",ExpressionUUID->"ea2e3811-8223-bf47-892f-f23c0583e165"],
+
+Cell[BoxData[
+ RowBox[{"importPackage", "[", 
+  RowBox[{"FileNameJoin", "[", 
+   RowBox[{
+    RowBox[{"NotebookDirectory", "[", "]"}], 
+    ",", "\"\<The-Sinh-ArcSinh-Family-of-Distributions.nb\>\""}], "]"}], 
+  "]"}]], "Input",
+ CellChangeTimes->{{3.778396839621148*^9, 3.7783968426163483`*^9}, {
+   3.881642089102935*^9, 3.881642144126238*^9}, 3.8816424622260427`*^9, {
+   3.881642814752241*^9, 3.881642816782325*^9}, {3.948777362523834*^9, 
+   3.948777368682764*^9}, 3.94877813401626*^9, {3.94880926334972*^9, 
+   3.9488092900080433`*^9}, {3.9490526972971096`*^9, 3.9490527061383057`*^9}},
+ CellLabel->"In[3]:=",ExpressionUUID->"04b72697-4815-3c42-8e7e-a7c9a347441b"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["Autoregressive Process", "Section",
+ CellChangeTimes->{{3.7783957100480323`*^9, 
+  3.7783957147748623`*^9}},ExpressionUUID->"5f0bec14-dafc-ca4c-a18f-\
+89de4a7f4a74"],
+
+Cell[BoxData[{
+ RowBox[{"processMeanFromInnovations", "=", 
+  RowBox[{"Function", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"equilibrium", ",", "errorMean", ",", "beta"}], "}"}], ",", 
+    RowBox[{"equilibrium", "+", 
+     RowBox[{"errorMean", "/", 
+      RowBox[{"(", 
+       RowBox[{"1", "-", 
+        RowBox[{
+         RowBox[{"(", 
+          RowBox[{"1", "-", "beta"}], ")"}], "^", "1"}]}], ")"}]}]}]}], 
+   "]"}]}], "\[IndentingNewLine]", 
+ RowBox[{"processVarianceFromInnovations", "=", 
+  RowBox[{"Function", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"errorVariance", ",", "beta"}], "}"}], ",", 
+    RowBox[{"errorVariance", "/", 
+     RowBox[{"(", 
+      RowBox[{"1", "-", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"1", "-", "beta"}], ")"}], "^", "2"}]}], ")"}]}]}], 
+   "]"}]}], "\[IndentingNewLine]", 
+ RowBox[{"processSkewnessFromInnovations", "=", 
+  RowBox[{"Function", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"errorSkewness", ",", "beta"}], "}"}], ",", 
+    RowBox[{"errorSkewness", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"1", "-", 
+         RowBox[{
+          RowBox[{"(", 
+           RowBox[{"1", "-", "beta"}], ")"}], "^", "2"}]}], ")"}], "^", 
+       RowBox[{"(", 
+        RowBox[{"3", "/", "2"}], ")"}]}], "/", 
+      RowBox[{"(", 
+       RowBox[{"1", "-", 
+        RowBox[{
+         RowBox[{"(", 
+          RowBox[{"1", "-", "beta"}], ")"}], "^", "3"}]}], ")"}]}]}]}], 
+   "]"}]}], "\[IndentingNewLine]", 
+ RowBox[{"processKurtosisFromInnovations", "=", 
+  RowBox[{"Function", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"errorKurtosis", ",", "beta"}], "}"}], ",", 
+    RowBox[{"3", "+", 
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{"errorKurtosis", "-", "3"}], ")"}], 
+      RowBox[{
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"1", "-", 
+          RowBox[{
+           RowBox[{"(", 
+            RowBox[{"1", "-", "beta"}], ")"}], "^", "2"}]}], ")"}], "^", 
+        RowBox[{"(", 
+         RowBox[{"4", "/", "2"}], ")"}]}], "/", 
+       RowBox[{"(", 
+        RowBox[{"1", "-", 
+         RowBox[{
+          RowBox[{"(", 
+           RowBox[{"1", "-", "beta"}], ")"}], "^", "4"}]}], ")"}]}]}]}]}], 
+   "]"}]}]}], "Input",
+ InitializationCell->True,
+ CellChangeTimes->{{3.778319414585282*^9, 3.7783195278118076`*^9}, {
+  3.7783195741129045`*^9, 3.7783195934102283`*^9}, {3.778323521927617*^9, 
+  3.778323524392433*^9}},
+ CellLabel->"In[4]:=",ExpressionUUID->"9d5b70ba-6720-9442-be46-ea90ef67b94f"],
+
+Cell[BoxData[{
+ RowBox[{"innovationsMeanFromProcess", "=", 
+  RowBox[{"Function", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"equilibrium", ",", "processMean", ",", "beta"}], "}"}], ",", 
+    RowBox[{
+     RowBox[{"(", 
+      RowBox[{"1", "-", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"1", "-", "beta"}], ")"}], "^", "1"}]}], ")"}], 
+     RowBox[{"(", 
+      RowBox[{"processMean", "-", "equilibrium"}], ")"}]}]}], "]"}]}], "\[IndentingNewLine]", 
+ RowBox[{"innovationsVarianceFromProcess", "=", 
+  RowBox[{"Function", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"processVariance", ",", "beta"}], "}"}], ",", 
+    RowBox[{
+     RowBox[{"(", 
+      RowBox[{"1", "-", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"1", "-", "beta"}], ")"}], "^", "2"}]}], ")"}], 
+     "processVariance"}]}], "]"}]}], "\[IndentingNewLine]", 
+ RowBox[{"innovationsSkewnessFromProcess", "=", 
+  RowBox[{"Function", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"processSkewness", ",", "beta"}], "}"}], ",", 
+    RowBox[{
+     RowBox[{
+      RowBox[{"(", 
+       RowBox[{"1", "-", 
+        RowBox[{
+         RowBox[{"(", 
+          RowBox[{"1", "-", "beta"}], ")"}], "^", "3"}]}], ")"}], "/", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"1", "-", 
+         RowBox[{
+          RowBox[{"(", 
+           RowBox[{"1", "-", "beta"}], ")"}], "^", "2"}]}], ")"}], "^", 
+       RowBox[{"(", 
+        RowBox[{"3", "/", "2"}], ")"}]}]}], "processSkewness"}]}], "]"}]}], "\[IndentingNewLine]", 
+ RowBox[{"innovationsKurtosisFromProcess", "=", 
+  RowBox[{"Function", "[", 
+   RowBox[{
+    RowBox[{"{", 
+     RowBox[{"processKurtosis", ",", "beta"}], "}"}], ",", 
+    RowBox[{"3", "+", 
+     RowBox[{
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"1", "-", 
+         RowBox[{
+          RowBox[{"(", 
+           RowBox[{"1", "-", "beta"}], ")"}], "^", "4"}]}], ")"}], "/", 
+       RowBox[{
+        RowBox[{"(", 
+         RowBox[{"1", "-", 
+          RowBox[{
+           RowBox[{"(", 
+            RowBox[{"1", "-", "beta"}], ")"}], "^", "2"}]}], ")"}], "^", 
+        RowBox[{"(", 
+         RowBox[{"4", "/", "2"}], ")"}]}]}], 
+      RowBox[{"(", 
+       RowBox[{"processKurtosis", "-", "3"}], ")"}]}]}]}], "]"}]}]}], "Input",
+ InitializationCell->True,
+ CellChangeTimes->{{3.778319815619053*^9, 3.778319865960575*^9}, {
+  3.7783198962871695`*^9, 3.778319937643035*^9}, {3.778323459605218*^9, 
+  3.7783234911330194`*^9}},
+ CellLabel->"In[8]:=",ExpressionUUID->"e6ad09c0-a94f-c54a-9d89-9ef23f43b9ca"],
+
+Cell[BoxData[
+ RowBox[{"With", "[", 
+  RowBox[{
+   RowBox[{"{", 
+    RowBox[{
+     RowBox[{"n", "=", "300000"}], ",", 
+     RowBox[{"equilibrium", "=", "24.5"}], ",", 
+     RowBox[{"beta", "=", "0.03"}], ",", 
+     RowBox[{"a", "=", 
+      RowBox[{"-", "1.05"}]}], ",", 
+     RowBox[{"b", "=", "0.0001"}], ",", 
+     RowBox[{"c", "=", "2.2"}], ",", 
+     RowBox[{"d", "=", "0.3"}]}], "}"}], ",", 
+   RowBox[{"Module", "[", 
+    RowBox[{
+     RowBox[{"{", 
+      RowBox[{
+       RowBox[{"oldValue", "=", "equilibrium"}], ",", 
+       RowBox[{"innovations", "=", 
+        RowBox[{"jonesInverseCumulativeDistribution", "[", 
+         RowBox[{
+          RowBox[{"RandomReal", "[", 
+           RowBox[{
+            RowBox[{"{", 
+             RowBox[{"0", ",", "1"}], "}"}], ",", "n"}], "]"}], ",", "a", ",",
+           "b", ",", "c", ",", "d"}], "]"}]}]}], "}"}], ",", 
+     RowBox[{"With", "[", 
+      RowBox[{
+       RowBox[{"{", 
+        RowBox[{"data", "=", 
+         RowBox[{"Table", "[", 
+          RowBox[{
+           RowBox[{"With", "[", 
+            RowBox[{
+             RowBox[{"{", 
+              RowBox[{"newValue", "=", 
+               RowBox[{"oldValue", "+", 
+                RowBox[{"beta", "*", 
+                 RowBox[{"(", 
+                  RowBox[{"equilibrium", "-", "oldValue"}], ")"}]}], "+", 
+                "innovation"}]}], "}"}], ",", 
+             RowBox[{"oldValue", "=", "newValue"}]}], "]"}], ",", 
+           RowBox[{"{", 
+            RowBox[{"innovation", ",", "innovations"}], "}"}]}], "]"}]}], 
+        "}"}], ",", 
+       RowBox[{"Grid", "[", 
+        RowBox[{"{", 
+         RowBox[{
+          RowBox[{"{", 
+           
+           RowBox[{"\"\<\>\"", ",", "\"\<Mean\>\"", ",", "\"\<Variance\>\"", 
+            ",", "\"\<Skewness\>\"", ",", "\"\<Kurtosis\>\""}], "}"}], ",", 
+          RowBox[{"{", 
+           RowBox[{"\"\<Innovation Moments from Data\>\"", ",", 
+            RowBox[{"Mean", "[", "innovations", "]"}], ",", 
+            RowBox[{"Variance", "[", "innovations", "]"}], ",", 
+            RowBox[{"Skewness", "[", "innovations", "]"}], ",", 
+            RowBox[{"Kurtosis", "[", "innovations", "]"}]}], "}"}], ",", 
+          RowBox[{"{", 
+           RowBox[{"\"\<Innovation Prediction from Parameters\>\"", ",", 
+            RowBox[{"jonesRawMoments", "[", 
+             RowBox[{"1", ",", "a", ",", "b", ",", "c", ",", "d"}], "]"}], ",", 
+            RowBox[{"jonesCentralMoments", "[", 
+             RowBox[{"2", ",", "a", ",", "b", ",", "c", ",", "d"}], "]"}], ",", 
+            RowBox[{"jonesStandardisedMoments", "[", 
+             RowBox[{"3", ",", "a", ",", "b", ",", "c", ",", "d"}], "]"}], ",", 
+            RowBox[{"jonesStandardisedMoments", "[", 
+             RowBox[{"4", ",", "a", ",", "b", ",", "c", ",", "d"}], "]"}]}], 
+           "}"}], ",", 
+          RowBox[{"{", 
+           RowBox[{"\"\<Innovation Prediction from Process\>\"", ",", 
+            RowBox[{"innovationsMeanFromProcess", "[", 
+             RowBox[{"equilibrium", ",", 
+              RowBox[{"Mean", "[", "data", "]"}], ",", "beta"}], "]"}], ",", 
+            RowBox[{"innovationsVarianceFromProcess", "[", 
+             RowBox[{
+              RowBox[{"Variance", "[", "data", "]"}], ",", "beta"}], "]"}], ",", 
+            RowBox[{"innovationsSkewnessFromProcess", "[", 
+             RowBox[{
+              RowBox[{"Skewness", "[", "data", "]"}], ",", "beta"}], "]"}], ",", 
+            RowBox[{"innovationsKurtosisFromProcess", "[", 
+             RowBox[{
+              RowBox[{"Kurtosis", "[", "data", "]"}], ",", "beta"}], "]"}]}], 
+           "}"}], ",", 
+          RowBox[{"{", 
+           RowBox[{"\"\<Process Moments from Data\>\"", ",", 
+            RowBox[{"Mean", "[", "data", "]"}], ",", 
+            RowBox[{"Variance", "[", "data", "]"}], ",", 
+            RowBox[{"Skewness", "[", "data", "]"}], ",", 
+            RowBox[{"Kurtosis", "[", "data", "]"}]}], "}"}], ",", 
+          RowBox[{"{", 
+           RowBox[{"\"\<Process Prediction from Parameters\>\"", ",", 
+            RowBox[{"processMeanFromInnovations", "[", 
+             RowBox[{"equilibrium", ",", 
+              RowBox[{"jonesRawMoments", "[", 
+               RowBox[{"1", ",", "a", ",", "b", ",", "c", ",", "d"}], "]"}], ",",
+               "beta"}], "]"}], ",", 
+            RowBox[{"processVarianceFromInnovations", "[", 
+             RowBox[{
+              RowBox[{"jonesCentralMoments", "[", 
+               RowBox[{"2", ",", "a", ",", "b", ",", "c", ",", "d"}], "]"}], ",",
+               "beta"}], "]"}], ",", 
+            RowBox[{"processSkewnessFromInnovations", "[", 
+             RowBox[{
+              RowBox[{"jonesStandardisedMoments", "[", 
+               RowBox[{"3", ",", "a", ",", "b", ",", "c", ",", "d"}], "]"}], ",",
+               "beta"}], "]"}], ",", 
+            RowBox[{"processKurtosisFromInnovations", "[", 
+             RowBox[{
+              RowBox[{"jonesStandardisedMoments", "[", 
+               RowBox[{"4", ",", "a", ",", "b", ",", "c", ",", "d"}], "]"}], ",",
+               "beta"}], "]"}]}], "}"}], ",", 
+          RowBox[{"{", 
+           RowBox[{"\"\<Process Prediction from Innovations\>\"", ",", 
+            RowBox[{"processMeanFromInnovations", "[", 
+             RowBox[{"equilibrium", ",", 
+              RowBox[{"Mean", "[", "innovations", "]"}], ",", "beta"}], "]"}],
+             ",", 
+            RowBox[{"processVarianceFromInnovations", "[", 
+             RowBox[{
+              RowBox[{"Variance", "[", "innovations", "]"}], ",", "beta"}], 
+             "]"}], ",", 
+            RowBox[{"processSkewnessFromInnovations", "[", 
+             RowBox[{
+              RowBox[{"Skewness", "[", "innovations", "]"}], ",", "beta"}], 
+             "]"}], ",", 
+            RowBox[{"processKurtosisFromInnovations", "[", 
+             RowBox[{
+              RowBox[{"Kurtosis", "[", "innovations", "]"}], ",", "beta"}], 
+             "]"}]}], "}"}], ",", 
+          RowBox[{"{", 
+           RowBox[{"\"\<Distribution Plots\>\"", ",", 
+            RowBox[{"Histogram", "[", "innovations", "]"}], ",", 
+            RowBox[{"SmoothHistogram", "[", "innovations", "]"}], ",", 
+            RowBox[{"Histogram", "[", "data", "]"}], ",", 
+            RowBox[{"SmoothHistogram", "[", "data", "]"}]}], "}"}], ",", 
+          RowBox[{"{", 
+           RowBox[{"\"\<Distribution over time\>\"", ",", 
+            RowBox[{"Histogram", "[", 
+             RowBox[{"Take", "[", 
+              RowBox[{"data", ",", 
+               RowBox[{"{", 
+                RowBox[{
+                 RowBox[{
+                  RowBox[{"1", "/", "5"}], "n"}], ",", 
+                 RowBox[{
+                  RowBox[{"2", "/", "5"}], "n"}]}], "}"}]}], "]"}], "]"}], ",", 
+            RowBox[{"SmoothHistogram", "[", 
+             RowBox[{"Take", "[", 
+              RowBox[{"data", ",", 
+               RowBox[{"{", 
+                RowBox[{
+                 RowBox[{
+                  RowBox[{"1", "/", "5"}], "n"}], ",", 
+                 RowBox[{
+                  RowBox[{"2", "/", "5"}], "n"}]}], "}"}]}], "]"}], "]"}], ",", 
+            RowBox[{"Histogram", "[", 
+             RowBox[{"Take", "[", 
+              RowBox[{"data", ",", 
+               RowBox[{"{", 
+                RowBox[{
+                 RowBox[{
+                  RowBox[{"3", "/", "5"}], "n"}], ",", 
+                 RowBox[{
+                  RowBox[{"4", "/", "5"}], "n"}]}], "}"}]}], "]"}], "]"}], ",", 
+            RowBox[{"SmoothHistogram", "[", 
+             RowBox[{"Take", "[", 
+              RowBox[{"data", ",", 
+               RowBox[{"{", 
+                RowBox[{
+                 RowBox[{
+                  RowBox[{"3", "/", "5"}], "n"}], ",", 
+                 RowBox[{
+                  RowBox[{"4", "/", "5"}], "n"}]}], "}"}]}], "]"}], "]"}]}], 
+           "}"}], ",", 
+          RowBox[{"Join", "[", 
+           RowBox[{
+            RowBox[{"{", "\"\<Process Plots\>\"", "}"}], ",", 
+            RowBox[{"Table", "[", 
+             RowBox[{
+              RowBox[{"ListPlot", "[", 
+               RowBox[{"Take", "[", 
+                RowBox[{"data", ",", 
+                 RowBox[{"{", 
+                  RowBox[{
+                   RowBox[{"1000", "p"}], ",", 
+                   RowBox[{
+                    RowBox[{"1000", "p"}], "+", "100"}]}], "}"}]}], "]"}], 
+               "]"}], ",", 
+              RowBox[{"{", 
+               RowBox[{"p", ",", "1", ",", "4"}], "}"}]}], "]"}]}], "]"}], ",", 
+          RowBox[{"Join", "[", 
+           RowBox[{
+            RowBox[{"{", "\"\<Process Plots\>\"", "}"}], ",", 
+            RowBox[{"Table", "[", 
+             RowBox[{
+              RowBox[{"ListPlot", "[", 
+               RowBox[{"Take", "[", 
+                RowBox[{"data", ",", 
+                 RowBox[{"{", 
+                  RowBox[{
+                   RowBox[{"1000", "p"}], ",", 
+                   RowBox[{
+                    RowBox[{"1000", "p"}], "+", "100"}]}], "}"}]}], "]"}], 
+               "]"}], ",", 
+              RowBox[{"{", 
+               RowBox[{"p", ",", "5", ",", "8"}], "}"}]}], "]"}]}], "]"}]}], 
+         "}"}], "]"}]}], "]"}]}], "]"}]}], "]"}]], "Input",
+ CellChangeTimes->{{3.7779703858594685`*^9, 3.777970442992876*^9}, {
+   3.7779704732728434`*^9, 3.77797058621225*^9}, 3.777970618360882*^9, 
+   3.777970676494422*^9, {3.777970810029117*^9, 3.7779708969520435`*^9}, 
+   3.7779709844053974`*^9, {3.7779710365004725`*^9, 3.7779711141899595`*^9}, {
+   3.7779711501105947`*^9, 3.777971176955571*^9}, {3.7779712602317495`*^9, 
+   3.7779713033009386`*^9}, 3.777971448009192*^9, 3.777971540058113*^9, {
+   3.777975528923147*^9, 3.777975561177425*^9}, {3.7779771183922863`*^9, 
+   3.777977148412492*^9}, {3.7779777426691704`*^9, 3.777977798092798*^9}, {
+   3.777977875672612*^9, 3.7779779001954465`*^9}, {3.777978165589331*^9, 
+   3.7779781925274887`*^9}, 3.7779784297421293`*^9, {3.777978492622286*^9, 
+   3.7779784930434885`*^9}, 3.777978525132894*^9, 3.777978606549816*^9, 
+   3.7782218663207827`*^9, {3.778230752281964*^9, 3.778230755932504*^9}, 
+   3.7782308308617945`*^9, {3.7782309432931566`*^9, 3.778230982512311*^9}, {
+   3.778231258325615*^9, 3.7782312714610677`*^9}, {3.778231302209259*^9, 
+   3.7782315426246357`*^9}, {3.7782316073498654`*^9, 3.778231711231597*^9}, {
+   3.7782317521353216`*^9, 3.778231752634528*^9}, {3.778231792200636*^9, 
+   3.7782318150393286`*^9}, {3.7782318561624556`*^9, 3.7782318565524607`*^9}, 
+   3.778231888579671*^9, {3.7782321935096235`*^9, 3.77823220418016*^9}, {
+   3.77823227046541*^9, 3.778232277126695*^9}, {3.778232562658156*^9, 
+   3.7782326820776873`*^9}, {3.778232747692128*^9, 3.7782327546654177`*^9}, {
+   3.7782328025424314`*^9, 3.778232825599527*^9}, {3.7782328650056324`*^9, 
+   3.7782328685000772`*^9}, 3.778232956235602*^9, {3.77823305826091*^9, 
+   3.778233123438545*^9}, 3.778233342253393*^9, {3.7782333755608206`*^9, 
+   3.7782334622521315`*^9}, {3.778233530893012*^9, 3.7782336084104056`*^9}, {
+   3.7782336809825363`*^9, 3.7782337644124055`*^9}, {3.778233905547415*^9, 
+   3.778233912130699*^9}, 3.7782342693772793`*^9, {3.778297881449184*^9, 
+   3.778297911697972*^9}, {3.7782997221482086`*^9, 3.778299745982586*^9}, {
+   3.778299915606112*^9, 3.778299932671418*^9}, {3.778300113507984*^9, 
+   3.778300118874281*^9}, {3.7783001947536297`*^9, 3.778300195518059*^9}, 
+   3.7783002385913153`*^9, {3.7783004840793886`*^9, 3.778300501879331*^9}, {
+   3.7783006624532185`*^9, 3.7783006705809755`*^9}, {3.778300866629489*^9, 
+   3.7783008755371466`*^9}, {3.778300940611638*^9, 3.7783009453540688`*^9}, {
+   3.778301038487666*^9, 3.77830114993478*^9}, {3.7783193714042053`*^9, 
+   3.778319372636613*^9}, {3.7783195328038397`*^9, 3.7783195382170744`*^9}, {
+   3.7783195963742476`*^9, 3.778319691176055*^9}, {3.7783199431030703`*^9, 
+   3.778319982025319*^9}, {3.7783200306986313`*^9, 3.7783200319778395`*^9}, {
+   3.7783200762509236`*^9, 3.7783201505698*^9}, 3.7783202200370455`*^9, {
+   3.778320951764529*^9, 3.7783209536989417`*^9}, {3.778321847437704*^9, 
+   3.7783218486234255`*^9}, {3.778323610771187*^9, 3.7783236192576413`*^9}, {
+   3.7783237271167326`*^9, 3.778323729971551*^9}, {3.7783238204242086`*^9, 
+   3.778323839222329*^9}, {3.7783240030877795`*^9, 3.778324010669428*^9}, {
+   3.7783241604708047`*^9, 3.778324180548133*^9}, 3.7783242558498163`*^9, {
+   3.7783244493534565`*^9, 3.7783244745320177`*^9}, {3.778324589489155*^9, 
+   3.778324601782034*^9}, {3.7783330169607096`*^9, 3.7783330452763433`*^9}, {
+   3.7783330760881205`*^9, 3.7783330907685676`*^9}, 3.778333322781162*^9, {
+   3.778384779865053*^9, 3.7783848983208475`*^9}, {3.7783850123191633`*^9, 
+   3.7783850190586653`*^9}, {3.778385112209638*^9, 3.778385117435705*^9}, {
+   3.778385149541917*^9, 3.7783851953129034`*^9}, {3.77838529329776*^9, 
+   3.7783853244825597`*^9}, {3.7783854617024403`*^9, 
+   3.7783856828026576`*^9}, {3.7783957334335823`*^9, 
+   3.7783957356331964`*^9}, {3.7783958880773735`*^9, 
+   3.7783960515206213`*^9}, {3.778396327300548*^9, 3.778396364350548*^9}, {
+   3.778396426439548*^9, 3.778396478559148*^9}, {3.7783965267163477`*^9, 
+   3.7783965286507483`*^9}, 3.778396575981148*^9, {3.778396683277948*^9, 
+   3.7783967145559483`*^9}, {3.778396760919148*^9, 3.7783967789059477`*^9}, {
+   3.7783968586531477`*^9, 3.778396863567148*^9}, {3.778396908133748*^9, 
+   3.778396908430148*^9}, 3.778396973326148*^9, {3.7783970503277483`*^9, 
+   3.778397051310548*^9}, {3.778397124739748*^9, 3.778397125020548*^9}},
+ CellLabel->"In[12]:=",ExpressionUUID->"a1cd547b-e01d-ad44-a226-94cb0aa44a53"]
+}, Open  ]],
+
+Cell[CellGroupData[{
+
+Cell["References", "Section",
+ CellChangeTimes->{{3.7783957100480323`*^9, 3.7783957147748623`*^9}, {
+  3.948778154465336*^9, 
+  3.9487781558495083`*^9}},ExpressionUUID->"6f4bb5b2-2c1c-2740-97c7-\
+3300075cd33d"],
+
+Cell["\<\
+https://en.wikipedia.org/wiki/Autoregressive_model
+https://en.wikipedia.org/wiki/Standardized_moment
+https://stats.stackexchange.com/questions/103405/prove-expression-for-\
+variance-ar1
+https://stats.stackexchange.com/questions/214041/skewness-for-a-sum-of-\
+independent-weighted-bernoulli-random-variables-with-diffe\
+\>", "Text",
+ CellChangeTimes->{{3.9487781576945534`*^9, 3.948778178416317*^9}, {
+  3.948778402466076*^9, 
+  3.948778405051113*^9}},ExpressionUUID->"d2dfbbfe-d827-4f4e-9510-\
+11d409623ab8"]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{1428, 735.75},
+WindowMargins->{{0, Automatic}, {Automatic, 0}},
+Visible->False,
+FrontEndVersion->"14.2 for Microsoft Windows (64-bit) (December 26, 2024)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"5ac85e73-f4de-7a4f-80d0-ca61d320c859"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 245, 4, 96, "Title",ExpressionUUID->"1fbcc6ad-5826-6547-84cc-2550cf264d6c"],
+Cell[828, 28, 258, 4, 52, "Subtitle",ExpressionUUID->"64746cef-a096-6a42-9cc6-6850e9ce4ec0"],
+Cell[1089, 34, 1496, 22, 143, "Text",ExpressionUUID->"ddeb7475-4ca9-e040-aa84-3cad203183d0"],
+Cell[2588, 58, 162, 3, 28, "Input",ExpressionUUID->"aa0812a0-e810-7344-ac9e-b5d0ca41f922"],
+Cell[CellGroupData[{
+Cell[2775, 65, 160, 3, 66, "Section",ExpressionUUID->"0bcc5949-a970-de48-acfc-69ed65da4e6c"],
+Cell[2938, 70, 1126, 26, 66, "Input",ExpressionUUID->"ea2e3811-8223-bf47-892f-f23c0583e165"],
+Cell[4067, 98, 670, 12, 28, "Input",ExpressionUUID->"04b72697-4815-3c42-8e7e-a7c9a347441b"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[4774, 115, 171, 3, 66, "Section",ExpressionUUID->"5f0bec14-dafc-ca4c-a18f-89de4a7f4a74"],
+Cell[4948, 120, 2498, 75, 101, "Input",ExpressionUUID->"9d5b70ba-6720-9442-be46-ea90ef67b94f",
+ InitializationCell->True],
+Cell[7449, 197, 2514, 73, 101, "Input",ExpressionUUID->"e6ad09c0-a94f-c54a-9d89-9ef23f43b9ca",
+ InitializationCell->True],
+Cell[9966, 272, 13491, 266, 332, "Input",ExpressionUUID->"a1cd547b-e01d-ad44-a226-94cb0aa44a53"]
+}, Open  ]],
+Cell[CellGroupData[{
+Cell[23494, 543, 210, 4, 66, "Section",ExpressionUUID->"6f4bb5b2-2c1c-2740-97c7-3300075cd33d"],
+Cell[23707, 549, 518, 11, 99, "Text",ExpressionUUID->"d2dfbbfe-d827-4f4e-9510-11d409623ab8"]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+

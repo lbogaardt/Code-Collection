@@ -1,0 +1,334 @@
+---
+title: "Linear Regression Simulation Study"
+author: "Laurens Bogaardt"
+date: "2024-06-26"
+output:
+  html_document:
+    df_print: paged
+    fig_width: 10
+    fig.align: center
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    theme: united
+    code_folding: show
+---
+
+<style>
+body{text-align: justify}
+</style>
+
+# Introduction
+
+This document describes a simulation study of a linear regression model with an intercept, a slope and an error term. First, the model is used to generate multiple datasets which are subsequently analysed to estimate the model's parameters via maximum likelihood. Various estimation methods are used and compared. All methods result in the same estimates but some are computationally faster than others. The document uses the package _tidyverse_.
+
+```{r results = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+```
+
+# Functions
+
+The following function generates data for a linear regression model. The subsequent functions estimate the parameters which best fit these data assuming the same model. This is done using multiple estimation methods which all result in the same maximum likelihood estimates.
+
+```{r}
+generate.data <- function(n, intercept, slope, sd.error) {
+  x <- rnorm(n)
+  y <- intercept + slope * x + sd.error * rnorm(n)
+  data <- data.frame(
+    n = n,
+    intercept = intercept,
+    slope = slope,
+    sd.error = sd.error,
+    x = x,
+    y = y
+  )
+  return(data)
+}
+```
+
+The following estimation method makes use of the analytical solution of ordinary least squares.
+
+```{r}
+estimate.model.and.get.coefficients.ols <- function(data) {
+  ptm <- proc.time()
+  x <- data$x
+  y <- data$y
+  X <- cbind(1, x)
+  XtX_inv <- solve(t(X) %*% X)
+  beta_hat <- XtX_inv %*% t(X) %*% y
+  sd <- sd(y - X %*% beta_hat)
+  time <- proc.time() - ptm
+  result <- c(
+    intercept = beta_hat[[1]],
+    slope = beta_hat[[2]],
+    sd.error = sd,
+    time = time[[3]]
+  )
+  return(result)
+}
+```
+
+The following estimation method makes use of the _lm_ function.
+
+```{r}
+estimate.model.and.get.coefficients.lm <- function(data) {
+  ptm <- proc.time()
+  model <- lm(
+    formula = y ~ 1 + x,
+    data = data
+  )
+  time <- proc.time() - ptm
+  result <- c(
+    intercept = model$coefficients[[1]],
+    slope = model$coefficients[[2]],
+    sd.error = sd(model$residuals),
+    time = time[[3]]
+  )
+  return(result)
+}
+```
+
+The following estimation method makes use of the _optim_ function.
+
+```{r}
+estimate.model.and.get.coefficients.optim <- function(data) {
+  ptm <- proc.time()
+  x <- data$x
+  y <- data$y
+  model <- optim(
+    par = c(0, 0, 0),
+    fn = function(par) {
+      sum(((par[[1]] + par[[2]] * x - y) / exp(par[[3]])) ^ 2 / 2 + par[[3]])
+    }
+  )
+  time <- proc.time() - ptm
+  result <- c(
+    intercept = model$par[[1]],
+    slope = model$par[[2]],
+    sd.error = exp(model$par[[3]]),
+    time = time[[3]]
+  )
+  return(result)
+}
+```
+
+The following function combines all previous estimation functions to be able to estimate and compare model parameters on the same input dataset.
+
+```{r}
+estimate.all.models.and.get.coefficients <- function(data) {
+  result <- data.frame(
+    method = c("ols", "lm", "optim"),
+    rbind(
+      estimate.model.and.get.coefficients.ols(data),
+      estimate.model.and.get.coefficients.lm(data),
+      estimate.model.and.get.coefficients.optim(data)
+    )
+  )
+  return(result)
+}
+```
+
+# Parameters
+
+The linear regression takes various input parameters. These can all be varied, one by one, which results in a table of input parameters on which the simulation study is performed.
+
+```{r}
+parameters <- tibble(
+  parameter.set = seq(5),
+  n = c(200, 800, 200, 200, 200),
+  intercept = c(1, 1, -0.5, 1, 1),
+  slope = c(0.5, 0.5, 0.5, -0.25, 0.5),
+  sd.error = c(1, 1, 1, 1, 0.5)
+)
+parameters
+```
+
+# Estimation
+
+For each set of input parameters, the generation and estimation procedure is applied multiple times. Every run results in slightly different estimates but all methods should produce the same values. These are compared below.
+
+```{r}
+estimated.parameters <- parameters %>%
+  expand_grid(
+    run = seq(10)
+  ) %>%
+  reframe(
+    generate.data(
+      n = n,
+      intercept = intercept,
+      slope = slope,
+      sd.error = sd.error
+    ) %>%
+      estimate.all.models.and.get.coefficients(),
+    .by = c(parameter.set, run)
+  )
+estimated.parameters
+```
+
+# Compare Estimates {.tabset .tabset-pills}
+
+The output of the simulation study contains estimated parameters for all the included methods. These should all give the same result. An easy way to check this is to plot the estimates of two methods together, one on the x-axis and one on the y-axis. The points should fall on a 45-degree line.
+
+```{r, results = "asis"}
+for (model.pairs in combn(unique(estimated.parameters$method), 2, simplify = FALSE)) {
+  cat("\n\n## ", model.pairs[[1]], " vs ", model.pairs[[2]], " {.tabset .tabset-pills}\n")
+  print(
+    ggplot(
+      mapping = aes(
+        x = !!sym(model.pairs[[1]]),
+        y = !!sym(model.pairs[[2]])
+      ),
+      data = estimated.parameters %>%
+        filter(method %in% model.pairs) %>%
+        select(-time) %>%
+        pivot_longer(c("intercept", "slope", "sd.error")) %>%
+        pivot_wider(names_from = "method"),
+        alpha = 0.1
+    ) +
+      geom_point() +
+      geom_smooth(
+        formula = y ~ x,
+        method = "lm",
+        col = "green"
+      ) +
+      geom_abline(
+        intercept = 0,
+        slope = 1
+      ) +
+      facet_grid(
+        cols = vars(name),
+        rows = vars(parameter.set),
+        scales = "free"
+      )
+  )
+}
+```
+
+# {.unlisted .unnumbered}
+
+All methods give the same result.
+
+# Compare Computation Time
+
+We have seen that all methods produce the same estimates. However, some methods are computationally faster than others. The table below provides the mean estimation time.
+
+```{r}
+estimated.parameters %>%
+  group_by(parameter.set, method) %>%
+  summarise(
+    time = mean(time),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    values_from = time,
+    names_from = method
+  )
+```
+
+The computation times can also be plot as densities.
+
+```{r}
+ggplot() +
+  geom_density(
+    mapping = aes(
+      x = time,
+      col = method
+    ),
+    data = estimated.parameters
+  ) +
+  facet_wrap(
+    facets = ~ method,
+    scales = "free_y"
+  )
+```
+
+# Visualise Estimated Parameters
+
+Given that the _lm_ method was computationally fast, and that is gave the same estimates as all other methods, let's use this to estimate even more values for generated datasets.
+
+```{r}
+estimated.parameters <- parameters %>%
+  expand_grid(
+    run = seq(1000)
+  ) %>%
+  reframe(
+    generate.data(
+      n = n,
+      intercept = intercept,
+      slope = slope,
+      sd.error = sd.error
+    ) %>%
+      estimate.model.and.get.coefficients.lm() %>%
+      as_tibble_row(),
+    .by = c(parameter.set, run)
+  )
+estimated.parameters
+```
+
+We now visualise the distribution of the estimated parameters, for each set of the input parameters. We can add a vertical line to indicate the value of the original, input parameter.
+
+```{r}
+ggplot() +
+  geom_density(
+    mapping = aes(
+      x = value,
+      y = after_stat(scaled),
+      fill = name
+    ),
+    data = estimated.parameters %>%
+      pivot_longer(
+        cols = c("intercept", "slope", "sd.error")
+      ),
+    alpha = 0.3
+  ) +
+  geom_vline(
+    mapping = aes(
+      xintercept = value,
+      col = name
+    ),
+    data = parameters %>%
+      pivot_longer(
+        cols = c("intercept", "slope", "sd.error")
+      )
+  ) +
+  facet_grid(
+    cols = vars(name),
+    rows = vars(parameter.set),
+    scales = "free"
+  )
+```
+
+# Visualise Parameter Correlations
+
+The estimated parameters may also correlate with each other. This is first visualised by listing the Pearson correlation in a matrix.
+
+```{r}
+ggplot(
+  mapping = aes(
+    x = parameter.1,
+    y = parameter.2,
+    fill = correlation,
+    label = sprintf("%.2f", correlation)
+  ),
+  data = estimated.parameters %>%
+    group_by(parameter.set) %>%
+    reframe(
+      expand_grid(
+        parameter.1 = c("intercept", "slope", "sd.error"),
+        parameter.2 = c("intercept", "slope", "sd.error")
+      ),
+      correlation = c(cor(data.frame(intercept, slope, sd.error)))
+    )
+) +
+  geom_tile(alpha = 0.5) +
+  geom_text() +
+  scale_fill_viridis_c() +
+  guides(fill = "none") +
+  labs(
+    x = NULL,
+    y = NULL
+  ) +
+  facet_wrap(
+    facets = vars(parameter.set)
+  )
+```

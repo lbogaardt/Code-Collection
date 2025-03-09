@@ -1,0 +1,347 @@
+---
+title: "Local Sensitivity Analysis And First-Order Uncertainty Quantification"
+author: "Laurens Bogaardt"
+date: "2024-04-01"
+output:
+  html_document:
+    df_print: paged
+    fig_width: 10
+    fig.align: center
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    theme: united
+    code_folding: show
+---
+
+<style>
+body{text-align: justify}
+</style>
+
+# Introduction
+
+This document shows how local sensitivity analysis can be done by examining all derivatives of a function with respect to its parameters, and how these derivatives can be used to speed up uncertainty quantification compared to a Monte Carlo approach, assuming the model's output is approximately linear in its input. If the input data is normally distributed, the surrogate model even allows for determining the output distribution analytically.
+
+```{r results = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(mnormt)
+set.seed(123)
+```
+
+# Functions
+
+The following plotting functions are used throughout this document. We also define a supposedly slow function which maps n-dimensional input linearly to m-dimensional output using an n-by-m matrix.
+
+```{r}
+plot.sample.and.distribution.margins <- function(samples, dimension, mean, standard.deviations) {
+  colnames(samples) <- as.character(seq(dimension))
+  x.tibble <- as_tibble(samples) %>%
+    mutate(p = seq(n())) %>%
+    pivot_longer(
+      cols = -p,
+      names_to = "dimension",
+      names_transform = as.integer,
+      values_to = "x"
+    )
+  plot <- ggplot(
+    data = tibble(
+      dimension = seq(dimension),
+      mean = mean,
+      standard.deviations = standard.deviations
+    ) %>%
+      expand_grid(
+        x = seq(-4, 4, 0.1)
+      ) %>%
+      group_by(dimension) %>%
+      mutate(
+        x = x * standard.deviations + mean,
+        y = dnorm(
+          x = x,
+          mean = mean,
+          sd = standard.deviations
+        )
+      ) %>%
+      ungroup()
+  ) +
+    geom_line(
+      mapping = aes(
+        x = x,
+        y = y
+      ),
+      linetype = "dotted"
+    ) +
+    geom_vline(
+      mapping = aes(
+        xintercept = mean
+      )
+    ) +
+    geom_density(
+      mapping = aes(
+        x = x
+      ),
+      data = x.tibble,
+      col = "darkgreen",
+      fill = "darkgreen",
+      alpha = 0.2
+    ) +
+    facet_wrap(
+      facets = vars(dimension)
+    )
+  return(plot)
+}
+```
+
+```{r}
+plot.sample.and.distribution.covariance <- function(samples, dimension, mean, standard.deviations, correlation) {
+  colnames(samples) <- as.character(seq(dimension))
+  x.tibble <- as_tibble(samples) %>%
+    mutate(p = seq(n())) %>%
+    pivot_longer(
+      cols = -p,
+      names_to = "l",
+      names_transform = as.integer,
+      values_to = "x"
+    )
+  x.y.tibble <- x.tibble %>%
+    full_join(
+      x.tibble,
+      by = "p",
+      relationship = "many-to-many",
+      suffix = c("1", "2")
+    )
+  plot <- ggplot(
+    data = expand_grid(
+      tibble(
+        l1 = seq(dimension),
+        mu1 = mean,
+        sigma1 = standard.deviations
+      ),
+      tibble(
+        l2 = seq(dimension),
+        mu2 = mean,
+        sigma2 = standard.deviations
+      )
+    ) %>%
+      expand_grid(
+        x1 = seq(-4, 4, 0.2),
+        x2 = seq(-4, 4, 0.2)
+      ) %>%
+      mutate(
+        correlation = 0.99 * correlation[cbind(l1, l2)],
+        y = exp(-x1 * (x1 - correlation * x2) / (1 - correlation ^ 2) / 2 - x2 * (x2 - correlation * x1) / (1 - correlation ^ 2) / 2),
+        x1 = x1 * sigma1 + mu1,
+        x2 = x2 * sigma2 + mu2
+      )
+  ) +
+    geom_contour(
+      mapping = aes(
+        x = x1,
+        y = x2,
+        z = y
+      ),
+      col = "black",
+      linetype = "dotted",
+      bins = 7
+    ) +
+    geom_vline(
+      mapping = aes(
+        xintercept = mu1
+      )
+    ) +
+    geom_hline(
+      mapping = aes(
+        yintercept = mu2
+      )
+    ) +
+    geom_density_2d(
+      mapping = aes(
+        x = x1,
+        y = x2
+      ),
+      data = x.y.tibble,
+      col = "darkgreen",
+      contour_var = "ndensity",
+      bins = 6
+    ) +
+    facet_grid(
+      rows = vars(l1),
+      cols = vars(l2)
+    )
+  return(plot)
+}
+```
+
+```{r}
+plot.sample.and.distribution.covariance.heatmap <- function(samples, dimension, covariance) {
+  plot <- ggplot(
+    mapping = aes(
+      x = col,
+      y = row,
+      fill = value,
+      label = sprintf("%.2f", value)
+    ),
+    data = tibble(
+      source = "Analytical",
+      row = rep(as.character(seq(dimension)), each = dimension),
+      col = rep(as.character(seq(dimension)), times = dimension),
+      value = c(covariance)
+    ) %>%
+      bind_rows(
+        tibble(
+          source = "Samples",
+          row = rep(as.character(seq(dimension)), each = dimension),
+          col = rep(as.character(seq(dimension)), times = dimension),
+          value = c(cov(samples))
+        )
+      )
+  ) +
+    geom_tile(alpha = 0.7) +
+    geom_text() +
+    scale_fill_viridis_c() +
+    guides(fill = "none") +
+    labs(
+      x = "",
+      y = ""
+    ) +
+    facet_wrap(vars(source))
+  return(plot)
+}
+```
+
+```{r}
+slow.function <- function(parameters, input.data) {
+  output.data <- cbind(1, input.data) %*% t(parameters)
+  return(output.data)
+}
+```
+
+# Parameters
+
+Let's begin by setting up some parameters. The function parameters define how our slow function maps the n-dimensional input to the m-dimensional output. We also create some uncertainty in our input data by defining an n-dimensional normal distribution with some correlation matrix.
+
+```{r}
+input.dimension <- 5
+output.dimension <- 3
+n.monte.carlo <- 4000
+delta <- 0.001
+function.parameters <- matrix(runif((input.dimension + 1) * output.dimension, -1, 1), nrow = output.dimension)
+function.parameters
+```
+
+```{r}
+input.data.mean <- runif(input.dimension, -2, 3)
+input.data.covariance.qr <- qr.Q(qr(matrix(rnorm(input.dimension ^ 2), input.dimension)))
+input.data.covariance <- crossprod(input.data.covariance.qr, input.data.covariance.qr * seq(5, 1))
+```
+
+```{r}
+input.data.standard.deviations <- sqrt(diag(input.data.covariance))
+input.data.correlation <- t(input.data.covariance / input.data.standard.deviations) / input.data.standard.deviations
+```
+
+# Input Samples
+
+If our input is uncertain, one way to propagate this uncertainty to the output is by sampling from the input distribution and calling our function many times. From our n-dimensional normal distribution, we take many samples.
+
+```{r}
+input.data.monte.carlo.samples <- rmnorm(n.monte.carlo, input.data.mean, input.data.covariance)
+```
+
+# Visualise Input Samples
+
+We can visualise the drawn samples and the analytical distribution based on the parameters defined above.
+
+```{r}
+plot.sample.and.distribution.margins(input.data.monte.carlo.samples, input.dimension, input.data.mean, input.data.standard.deviations)
+```
+
+```{r}
+plot.sample.and.distribution.covariance.heatmap(input.data.monte.carlo.samples, input.dimension, input.data.covariance)
+```
+
+```{r}
+plot.sample.and.distribution.covariance(input.data.monte.carlo.samples, input.dimension, input.data.mean, input.data.standard.deviations, input.data.correlation)
+```
+
+# Slow Output Samples
+
+The drawn input samples can be fed into our slow function to get the output samples. From these samples, the moments of the output distribution, such as the mean and the covariance, can be approximated.
+
+```{r}
+output.data.monte.carlo.samples <- slow.function(function.parameters, input.data.monte.carlo.samples)
+```
+
+```{r}
+output.data.monte.carlo.mean <- apply(output.data.monte.carlo.samples, 2, mean)
+output.data.monte.carlo.mean
+```
+
+```{r}
+output.data.monte.carlo.covariance <- cov(output.data.monte.carlo.samples)
+output.data.monte.carlo.covariance
+```
+
+```{r}
+output.data.monte.carlo.standard.deviations <- apply(output.data.monte.carlo.samples, 2, sd)
+output.data.monte.carlo.standard.deviations
+```
+
+```{r}
+output.data.monte.carlo.correlation <- cor(output.data.monte.carlo.samples)
+output.data.monte.carlo.correlation
+```
+
+# Design of Experiment
+
+Assuming our slow function is approximately linear, we need only a few function calls to determine the derivatives around the mean input data. The result of this local sensitivity analysis is the jacobian of our function.
+
+```{r}
+input.data.hypercube <- t(t(do.call(expand.grid, rep(list(c(0, delta)), input.dimension))) + input.data.mean)
+input.data.linear.deltas <- t(t(rbind(rep(0, input.dimension), delta * diag(input.dimension))) + input.data.mean)
+output.data.linear.deltas <- slow.function(function.parameters, input.data.linear.deltas)
+intercept.and.jacobian <- unname(t(coef(lm(output.data.linear.deltas ~ 1 + input.data.linear.deltas))))
+intercept <- intercept.and.jacobian[,1]
+jacobian <- intercept.and.jacobian[,-1]
+n.analytical <- nrow(input.data.linear.deltas)
+n.analytical
+```
+
+# Surrogate Output Data
+
+Using the mean output value and the jacobian, we can construct a first-order surrogate model. This can be used to determine the m-dimensional normal distribution of the output, given normally distributed uncertainty in the input. 
+
+```{r}
+output.data.analytical.mean <- intercept + c(matrix(input.data.mean, nrow = 1) %*% t(jacobian))
+output.data.analytical.mean
+```
+
+```{r}
+output.data.analytical.covariance <- jacobian %*% input.data.covariance %*% t(jacobian)
+output.data.analytical.covariance
+```
+
+```{r}
+output.data.analytical.standard.deviations <- sqrt(diag(output.data.analytical.covariance))
+output.data.analytical.standard.deviations
+```
+
+```{r}
+output.data.analytical.correlation <- t(output.data.analytical.covariance / output.data.analytical.standard.deviations) / output.data.analytical.standard.deviations
+output.data.analytical.correlation
+```
+
+# Visualise Comparison
+
+We can now visualise the large number of output samples and the analytical distribution based on the surrogate model to show that they agree, even though only a small number of function calls were required to construct the surrogate model.
+
+```{r}
+plot.sample.and.distribution.margins(output.data.monte.carlo.samples, output.dimension, output.data.analytical.mean, output.data.analytical.standard.deviations)
+```
+
+```{r}
+plot.sample.and.distribution.covariance.heatmap(output.data.monte.carlo.samples, output.dimension, output.data.analytical.covariance)
+```
+
+```{r}
+plot.sample.and.distribution.covariance(output.data.monte.carlo.samples, output.dimension, output.data.analytical.mean, output.data.analytical.standard.deviations, output.data.analytical.correlation)
+```

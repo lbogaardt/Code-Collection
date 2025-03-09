@@ -1,0 +1,437 @@
+---
+title: "Mixed Effects Linear Regression With Random Effect on Sigma Simulation Study"
+author: "Laurens Bogaardt"
+date: "2023-06-26"
+output:
+  html_document:
+    df_print: paged
+    fig_width: 10
+    fig.align: center
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    theme: united
+    code_folding: show
+---
+
+# Introduction
+
+This document describes a simulation study of a mixed effects linear regression model with the random effect on the sigma parameter of the model instead of on the mu parameter. This model is used to generate multiple datasets which are subsequently analysed to estimate the model's parameters via maximum likelihood. Multiple estimation methods are used and it is verified whether these all result in the same estimates. The document uses the packages _tidyverse_, _gamlss_ and _matrixStats_.
+
+```{r results = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(gamlss)
+library(matrixStats)
+```
+
+# Functions
+
+The following function generates data for a mixed effects linear regression model with the random effect on the sigma parameter of the model instead of on the mu parameter and subsequently estimates the parameters which best fit these data assuming the same model. It does this using multiple estimation methods which should result in the same maximum likelihood estimates. The first method makes use of a custom likelihood function which is optimised using the function _optim_ and which also makes use of the function _logSumExp_ from the package _matrixStats_. The second and final method makes use of the _gamlss_ function of the package _gamlss_.
+
+```{r}
+generate.data <- function(n.participants, n.measurements, mu.fixed.intercept, log.sigma.fixed.intercept, log.sigma.sd.random.intercept) {
+  participant.id <- as.factor(rep(seq(n.participants), times = n.measurements))
+  log.sigma.random.intercept <- rep(log.sigma.sd.random.intercept * rnorm(n.participants), times = n.measurements)
+  y <- mu.fixed.intercept + exp(log.sigma.fixed.intercept + log.sigma.random.intercept) * rnorm(n.participants * n.measurements)
+  data <- data.frame(
+    n.participants = n.participants,
+    n.measurements = n.measurements,
+    mu.fixed.intercept = mu.fixed.intercept,
+    log.sigma.fixed.intercept = log.sigma.fixed.intercept,
+    log.sigma.sd.random.intercept = log.sigma.sd.random.intercept,
+    participant.id = participant.id,
+    y = y
+  )
+  return(data)
+}
+```
+
+The following estimation method makes use of the _optim_ function from the package _optim_.
+
+```{r}
+estimate.model.and.get.coefficients.optim <- function(data) {
+  mu.fixed.intercept <- first(data$mu.fixed.intercept)
+  log.sigma.fixed.intercept <- first(data$log.sigma.fixed.intercept)
+  log.sigma.sd.random.intercept <- first(data$log.sigma.sd.random.intercept)
+  participant.id <- data$participant.id
+  y <- data$y
+  ptm <- proc.time()
+  fun.ri <- function(i, par, p) { # Custom likelihood optimisation.
+    -sum(((par[[1]] - p) / exp(par[[2]] + par[[3]] * i)) ^ 2 / 2 + par[[2]] + par[[3]] * i) - i ^ 2 / 2
+  }
+  ri <- seq(-4, 4, 0.05)
+  fun.y.split <- function(p, par) {
+    logSumExp(sapply(ri, fun.ri, par, p))
+  }
+  y.split <- split(y, participant.id)
+  fun.optim <- function(par) {
+    -sum(sapply(y.split, fun.y.split, par))
+  }
+  model.optim <- optim(
+    par = c(mu.fixed.intercept, log.sigma.fixed.intercept, log.sigma.sd.random.intercept),
+    fn = fun.optim
+  )
+  time <- proc.time() - ptm
+  result <- data.frame(
+    mu.fixed.intercept = model.optim$par[[1]],
+    log.sigma.fixed.intercept = model.optim$par[[2]],
+    log.sigma.sd.random.intercept = model.optim$par[[3]],
+    time = time[[3]]
+  )
+  return(result)
+}
+```
+
+The following estimation method makes use of the _gamlss_ function from the package _gamlss_.
+
+```{r}
+estimate.model.and.get.coefficients.gamlss <- function(data) {
+  ptm <- proc.time()
+  data.gamlss <<- data.frame( ## GAMLSS is poorly written and cannot find the data unless it's in the Global Environment.
+    y = data$y,
+    participant.id = as.factor(data$participant.id)
+  )
+  model.gamlss.1 <- gamlss(
+    formula = y ~ 1,
+    sigma.formula = ~ 0 + re(fixed = ~ 1, random = ~ 1 | participant.id),
+    family = NO(
+      mu.link = "identity",
+      sigma.link = "log"
+    ),
+    data = data.gamlss,
+    trace = FALSE
+  )
+  model.gamlss.2 <- gamlss(
+    formula = y ~ 1,
+    sigma.formula = ~ 1 + random(participant.id, df = 0),
+    family = NO(
+      mu.link = "identity",
+      sigma.link = "log"
+    ),
+    data = data.gamlss,
+    trace = FALSE
+  )
+  time <- proc.time() - ptm
+  result <- data.frame(
+    mu.fixed.intercept = mean(predict(model.gamlss.1, "mu")),
+    log.sigma.fixed.intercept = sqrt(mean(predict(model.gamlss.2, "sigma")) ^ 2 - as.numeric(VarCorr(getSmo(model.gamlss.1, "sigma"))[[3]]) ^ 2),
+    log.sigma.sd.random.intercept = as.numeric(VarCorr(getSmo(model.gamlss.1, "sigma"))[[3]]),
+    time = time[[3]]
+  )
+  return(result)
+}
+```
+
+The following function combines all previous estimation functions to be able to estimate and compare model parameters on the same input dataset.
+
+```{r}
+estimate.all.models.and.get.coefficients <- function(data) {
+  result <- data.frame(
+    method = c("gamlss", "optim"),
+    rbind(
+      estimate.model.and.get.coefficients.gamlss(data),
+      estimate.model.and.get.coefficients.optim(data)
+    )
+  )
+  return(result)
+}
+```
+
+# Parameters
+
+The mixed effects linear regression takes various input parameters. These can all be varied, one by one, which results in a table of input parameters on which the simulation study is performed.
+
+```{r}
+parameters <- tibble(
+  parameter.set = seq(6),
+  n.participants = c(100, 400, 100, 100, 100, 100),
+  n.measurements = c(20, 20, 80, 20, 20, 20),
+  mu.fixed.intercept = c(0.1, 0.1, 0.1, -0.2, 0.1, 0.1),
+  log.sigma.fixed.intercept = c(0.5, 0.5, 0.5, 0.5, 0.5, 0.7),
+  log.sigma.sd.random.intercept = c(0.3, 0.3, 0.3, 0.3, 0.2, 0.3)
+)
+parameters
+```
+
+# Estimation
+
+For each set of input parameters, the generation and estimation procedure is applied multiple times. Every run results in slightly different estimates, which are compared below with the original input values.
+
+```{r}
+estimated.parameters <- parameters %>%
+  expand_grid(
+    run = seq(5)
+  ) %>%
+  reframe(
+    generate.data(
+      n.participants = n.participants,
+      n.measurements = n.measurements,
+      mu.fixed.intercept = mu.fixed.intercept,
+      log.sigma.fixed.intercept = log.sigma.fixed.intercept,
+      log.sigma.sd.random.intercept = log.sigma.sd.random.intercept
+    ) %>%
+      estimate.all.models.and.get.coefficients(),
+    .by = c(parameter.set, run)
+  )
+estimated.parameters
+```
+
+# Compare Methods
+
+The output of the simulation study contains estimated parameters for both the included methods. These should give the same result. An easy way to check this is to plot the estimates of two methods together, one on the x-axis and one on the y-axis. The points should fall on a 45-degree line.
+
+```{r}
+ggplot(
+  mapping = aes(
+    x = optim,
+    y = gamlss
+  ),
+  data = estimated.parameters %>%
+    select(-time) %>%
+    pivot_longer(c("mu.fixed.intercept", "log.sigma.fixed.intercept", "log.sigma.sd.random.intercept")) %>%
+    pivot_wider(names_from = "method"),
+    alpha = 0.1
+) +
+  geom_point() +
+  geom_smooth(
+    formula = y ~ x,
+    method = "lm",
+    col = "green"
+  ) +
+  geom_abline(
+    intercept = 0,
+    slope = 1
+  ) +
+  facet_grid(
+    cols = vars(name),
+    rows = vars(parameter.set),
+    scales = "free"
+  )
+```
+
+# Compare Computation Time
+
+We have seen that all methods produce the same estimates. However, some methods are computationally faster than others. The table below provides the mean estimation time.
+
+```{r}
+estimated.parameters %>%
+  group_by(parameter.set, method) %>%
+  summarise(
+    time = mean(time),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    values_from = time,
+    names_from = method
+  )
+```
+
+The computation times can also be plot as densities.
+
+```{r}
+ggplot() +
+  geom_density(
+    mapping = aes(
+      x = time,
+      col = method
+    ),
+    data = estimated.parameters
+  ) +
+  facet_wrap(
+    facets = ~ method,
+    scales = "free_y"
+  )
+```
+
+# Visualise Estimated Parameters
+
+Given that the _gamlss_ method was computationally fast, and that is gave the same estimates as all other methods, let's use this to estimate even more values for generated datasets.
+
+```{r}
+estimated.parameters <- parameters %>%
+  expand_grid(
+    run = seq(40)
+  ) %>%
+  reframe(
+    generate.data(
+      n.participants = n.participants,
+      n.measurements = n.measurements,
+      mu.fixed.intercept = mu.fixed.intercept,
+      log.sigma.fixed.intercept = log.sigma.fixed.intercept,
+      log.sigma.sd.random.intercept = log.sigma.sd.random.intercept
+    ) %>%
+      estimate.model.and.get.coefficients.gamlss(),
+    .by = c(parameter.set, run)
+  )
+estimated.parameters
+```
+
+We now visualise the distribution of the estimated parameters, for each set of the input parameters. We can add a vertical line to indicate the value of the original, input parameter.
+
+```{r}
+ggplot() +
+  geom_density(
+    mapping = aes(
+      x = value,
+      y = after_stat(scaled),
+      fill = name
+    ),
+    data = estimated.parameters %>%
+      pivot_longer(
+        cols = c("mu.fixed.intercept", "log.sigma.fixed.intercept", "log.sigma.sd.random.intercept")
+      ),
+    alpha = 0.3
+  ) +
+  geom_vline(
+    mapping = aes(
+      xintercept = value,
+      col = name
+    ),
+    data = parameters %>%
+      pivot_longer(
+        cols = c("mu.fixed.intercept", "log.sigma.fixed.intercept", "log.sigma.sd.random.intercept")
+      )
+  ) +
+  facet_grid(
+    cols = vars(name),
+    rows = vars(parameter.set),
+    scales = "free"
+  )
+```
+
+# Visualise Parameter Correlations
+
+The estimated parameters may also correlate with each other. This is first visualised by listing the Pearson correlation in a matrix.
+
+```{r}
+ggplot(
+  mapping = aes(
+    x = parameter.1,
+    y = parameter.2,
+    fill = correlation,
+    label = sprintf("%.2f", correlation)
+  ),
+  data = estimated.parameters %>%
+    group_by(parameter.set) %>%
+    reframe(
+      expand_grid(
+        parameter.1 = c("mu.fixed.intercept", "log.sigma.fixed.intercept", "log.sigma.sd.random.intercept"),
+        parameter.2 = c("mu.fixed.intercept", "log.sigma.fixed.intercept", "log.sigma.sd.random.intercept")
+      ),
+      correlation = c(cor(data.frame(mu.fixed.intercept, log.sigma.fixed.intercept, log.sigma.sd.random.intercept)))
+    )
+) +
+  geom_tile(alpha = 0.5) +
+  geom_text() +
+  scale_fill_viridis_c() +
+  guides(fill = "none") +
+  labs(
+    x = NULL,
+    y = NULL
+  ) +
+  facet_wrap(
+    facets = vars(parameter.set)
+  )
+```
+
+For each pair of the estimated parameter, the correlation can also be visualised using a scatter plot. Let's first do this for the fixed intercept on the mu parameter and the fixed intercept on the log of the sigma parameter.
+
+```{r}
+ggplot(
+  mapping = aes(
+    x = mu.fixed.intercept,
+    y = log.sigma.fixed.intercept
+  ),
+  data = estimated.parameters,
+    alpha = 0.1
+) +
+  geom_point() +
+  geom_smooth(
+    formula = y ~ x,
+    method = "lm"
+  ) +
+  geom_vline(
+    mapping = aes(
+      xintercept = mu.fixed.intercept
+    ),
+    data = parameters
+  ) +
+  geom_hline(
+    mapping = aes(
+      yintercept = log.sigma.fixed.intercept
+    ),
+    data = parameters
+  ) +
+  facet_wrap(
+    facets = vars(parameter.set),
+    scales = "free"
+  )
+```
+
+Let's now do this for the fixed intercept on the mu parameter and the standard deviation of the random intercept on the log of the sigma parameter.
+
+```{r}
+ggplot(
+  mapping = aes(
+    x = mu.fixed.intercept,
+    y = log.sigma.sd.random.intercept
+  ),
+  data = estimated.parameters,
+    alpha = 0.1
+) +
+  geom_point() +
+  geom_smooth(
+    formula = y ~ x,
+    method = "lm"
+  ) +
+  geom_vline(
+    mapping = aes(
+      xintercept = mu.fixed.intercept
+    ),
+    data = parameters
+  ) +
+  geom_hline(
+    mapping = aes(
+      yintercept = log.sigma.sd.random.intercept
+    ),
+    data = parameters
+  ) +
+  facet_wrap(
+    facets = vars(parameter.set),
+    scales = "free"
+  )
+```
+
+Finally, let's do this for the fixed intercept on the log of the sigma parameter and the standard deviation of the random intercept on the log of the sigma parameter.
+
+```{r}
+ggplot(
+  mapping = aes(
+    x = log.sigma.fixed.intercept,
+    y = log.sigma.sd.random.intercept
+  ),
+  data = estimated.parameters,
+    alpha = 0.1
+) +
+  geom_point() +
+  geom_smooth(
+    formula = y ~ x,
+    method = "lm"
+  ) +
+  geom_vline(
+    mapping = aes(
+      xintercept = log.sigma.fixed.intercept
+    ),
+    data = parameters
+  ) +
+  geom_hline(
+    mapping = aes(
+      yintercept = log.sigma.sd.random.intercept
+    ),
+    data = parameters
+  ) +
+  facet_wrap(
+    facets = vars(parameter.set),
+    scales = "free"
+  )
+```

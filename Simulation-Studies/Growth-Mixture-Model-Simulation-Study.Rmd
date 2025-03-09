@@ -1,0 +1,252 @@
+---
+title: "Growth Mixture Model Simulation Study"
+author: "Laurens Bogaardt"
+date: "2023-06-12"
+output:
+  html_document:
+    df_print: paged
+    fig_width: 10
+    fig.align: center
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    theme: united
+    code_folding: show
+---
+
+# Introduction
+
+Relevant references include:
+
+- Herle, M., Micali, N., Abdulkadir, M. et al. Identifying typical trajectories in longitudinal data: modelling strategies and interpretations. Eur J Epidemiol 35, 205–222 (2020). https://doi.org/10.1007/s10654-020-00615-6
+- Audrain-McGovern J, Rodriguez D, Tercyak KP, Cuevas J, Rodgers K, Patterson F. Identifying and characterizing adolescent smoking trajectories. Cancer Epidemiol Biomarkers Prev. 2004 Dec;13(12):2023-34. PMID: 15598757.
+- Donovan JE, Chung T. Progressive elaboration and cross-validation of a latent class typology of adolescent alcohol involvement in a national sample. J Stud Alcohol Drugs. 2015 May;76(3):419-29. doi: 10.15288/jsad.2015.76.419. PMID: 25978828; PMCID: PMC4440300.
+- Jung, T., & Wickrama, K. A. S. (2008). An introduction to latent class growth analysis and growth mixture modeling. Social and Personality Psychology Compass, 2(1), 302–317. https://doi.org/10.1111/j.1751-9004.2007.00054.x
+- Gilthorpe MS, Dahly DL, Tu YK, Kubzansky LD, Goodman E. Challenges in modelling the random structure correctly in growth mixture models and the impact this has on model mixtures. J Dev Orig Health Dis. 2014 Jun;5(3):197-205. doi: 10.1017/S2040174414000130. PMID: 24901659; PMCID: PMC4098080.
+- McNeish D, Peña A, Vander Wyst KB, Ayers SL, Olson ML, Shaibi GQ. Facilitating Growth Mixture Model Convergence in Preventive Interventions. Prev Sci. 2023 Apr;24(3):505-516. doi: 10.1007/s11121-021-01262-3. Epub 2021 Jul 7. PMID: 34235633; PMCID: PMC9004621.
+- Hipp JR, Bauer DJ. Local solutions in the estimation of growth mixture models. Psychol Methods. 2006 Mar;11(1):36-53. doi: 10.1037/1082-989X.11.1.36. PMID: 16594766.
+
+This document describes ...
+
+The document uses the package _tidyverse_ and _lcmm_.
+
+```{r results = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(lcmm)
+```
+
+# Functions
+
+```{r}
+generate.and.estimate.growth.mixture.models <- function(n.participants, n.measurements, class.intercept, fixed.intercept.1, fixed.intercept.2, sd.random.intercept, sd.error) {
+  class.y <- class.intercept + rlogis(n.participants)
+  class <- as.numeric(class.y < 0)
+  participant.intercept <- fixed.intercept.1 + class * (fixed.intercept.2 - fixed.intercept.1) + sd.random.intercept * rnorm(n.participants)
+  y <- rep(participant.intercept, each = n.measurements) + sd.error * rnorm(n.participants * n.measurements)
+  participant.id <- rep(seq(n.participants), each = n.measurements)
+  model.1 <- hlme(
+    fixed = y ~ 1,
+    random = ~ 1,
+    subject = "participant.id",
+    ng = 1,
+    data = data.frame(
+      y = y,
+      participant.id = participant.id
+    )
+  )
+  model_2 <- gridsearch(
+    m = hlme(
+      fixed = y ~ 1,
+      mixture = ~ 1,
+      random = ~ 1,
+      subject = "participant.id",
+      classmb = ~ 1,
+      ng = 2,
+      data = data.frame(
+        y = y,
+        participant.id = participant.id
+      )
+    ),
+    rep = 10,
+    maxiter = 10,
+    minit = model.1
+  )
+  model <- hlme(
+    fixed = y ~ 1,
+    mixture = ~ 1,
+    random = ~ 1,
+    subject = "participant.id",
+    classmb = ~ 1,
+    ng = 2,
+    B = c(class.intercept, fixed.intercept.1, fixed.intercept.2, sd.random.intercept, sd.error),
+    data = data.frame(
+      y = y,
+      participant.id = participant.id
+    )
+  )
+  result <- data.frame(
+    class.intercept = coef(model)[[1]],
+    fixed.intercept.1 = coef(model)[[2]],
+    fixed.intercept.2 = coef(model)[[3]],
+    sd.random.intercept = abs(coef(model)[[4]]),
+    sd.error = abs(coef(model)[[5]]),
+    class.intercept_2 = coef(model_2)[[1]],
+    fixed.intercept.1_2 = coef(model_2)[[2]],
+    fixed.intercept.2_2 = coef(model_2)[[3]],
+    sd.random.intercept_2 = abs(coef(model_2)[[4]]),
+    sd.error_2 = abs(coef(model_2)[[5]])
+  )
+  return(result)
+}
+```
+
+# Parameters
+
+```{r}
+parameters <- tibble(
+  parameter.set = seq(8),
+  n.participants = c(200, 800, 200, 200, 200, 200, 200, 200),
+  n.measurements = c(5, 5, 10, 5, 5, 5, 5, 5),
+  class.intercept = c(1, 1, 1, 0.5, 1, 1, 1, 1),
+  fixed.intercept.1 = c(-3, -3, -3, -3, -2.5, -3, -3, -3),
+  fixed.intercept.2 = c(0.5, 0.5, 0.5, 0.5, 0.5, 0.9, 0.5, 0.5),
+  sd.random.intercept = c(0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.6, 0.3),
+  sd.error = c(0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.5)
+)
+parameters
+```
+
+# Estimation
+
+```{r}
+estimated.parameters <- parameters %>%
+  expand_grid(
+    run = seq(10)
+  ) %>%
+  rowwise() %>%
+  mutate(
+    generate.and.estimate.growth.mixture.models(
+      n.participants = n.participants,
+      n.measurements = n.measurements,
+      class.intercept = class.intercept,
+      fixed.intercept.1 = fixed.intercept.1,
+      fixed.intercept.2 = fixed.intercept.2,
+      sd.random.intercept = sd.random.intercept,
+      sd.error = sd.error
+    )
+  ) %>%
+  ungroup()
+estimated.parameters
+```
+
+# Visualise Estimated Paramaters
+
+```{r}
+ggplot() +
+  geom_density(
+    mapping = aes(
+      x = value,
+      y = after_stat(scaled),
+      fill = name
+    ),
+    data = estimated.parameters %>%
+      pivot_longer(
+        cols = c("class.intercept", "fixed.intercept.1", "fixed.intercept.2", "sd.random.intercept", "sd.error")
+      ),
+    alpha = 0.3
+  ) +
+  geom_vline(
+    mapping = aes(
+      xintercept = value,
+      col = name
+    ),
+    data = parameters %>%
+      pivot_longer(
+        cols = c("class.intercept", "fixed.intercept.1", "fixed.intercept.2", "sd.random.intercept", "sd.error")
+      )
+  ) +
+  facet_grid(
+    cols = vars(name),
+    rows = vars(parameter.set),
+    scales = "free"
+  )
+```
+
+# Visualise Parameter Correlations
+
+```{r}
+ggplot(
+  mapping = aes(
+    x = parameter.1,
+    y = parameter.2,
+    fill = correlation,
+    label = sprintf("%.2f", correlation)
+  ),
+  data = estimated.parameters %>%
+    group_by(parameter.set) %>%
+    reframe(
+      expand_grid(
+        parameter.1 = c("class.intercept", "fixed.intercept.1", "fixed.intercept.2", "sd.random.intercept", "sd.error"),
+        parameter.2 = c("class.intercept", "fixed.intercept.1", "fixed.intercept.2", "sd.random.intercept", "sd.error")
+      ),
+      correlation = c(cor(data.frame(class.intercept, fixed.intercept.1, fixed.intercept.2, sd.random.intercept, sd.error)))
+    )
+) +
+  geom_tile(alpha = 0.5) +
+  geom_text() +
+  scale_fill_viridis_c() +
+  guides(fill = "none") +
+  labs(
+    x = NULL,
+    y = NULL
+  ) +
+  facet_wrap(
+    facets = vars(parameter.set)
+  )
+```
+
+```{r}
+estimated.parameters %>%
+  count(
+    abs(class.intercept) < 0.01,
+    abs(class.intercept_2) < 0.01
+  )
+```
+
+```{r}
+for (i in c("class.intercept", "fixed.intercept.1", "fixed.intercept.2", "sd.random.intercept", "sd.error")) {
+  print(
+    ggplot(
+      mapping = aes(
+        x = get(i),
+        y = get(paste0(i, "_2"))
+      ),
+      data = estimated.parameters %>%
+        filter(abs(class.intercept_2) > 0.01),
+        alpha = 0.1
+    ) +
+      geom_point() +
+      geom_smooth(
+        formula = y ~ x,
+        method = "lm",
+        col = "green"
+      ) +
+      geom_vline(
+        mapping = aes(
+          xintercept = get(i)
+        ),
+        data = parameters
+      ) +
+      geom_hline(
+        mapping = aes(
+          yintercept = get(i)
+        ),
+        data = parameters
+      ) +
+      facet_wrap(
+        facets = vars(parameter.set),
+        scales = "free"
+      )
+  )
+}
+```

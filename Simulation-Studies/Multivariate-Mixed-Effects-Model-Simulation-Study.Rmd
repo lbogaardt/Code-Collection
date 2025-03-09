@@ -1,0 +1,143 @@
+---
+title: "Multivariate Mixed Effects Model Simulation Study"
+author: "Laurens Bogaardt"
+date: "2023-12-21"
+output:
+  html_document:
+    df_print: paged
+    fig_width: 10
+    fig.align: center
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    theme: united
+    code_folding: show
+---
+
+# Introduction
+
+```{r results = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(nlme)
+library(mvtnorm)
+```
+
+# Functions
+
+```{r}
+generate.and.estimate.mixed.effects.linear.regression <- function(n.participants, n.measurements, fixed.intercept.1, fixed.intercept.2, sd.random.intercept.1, sd.random.intercept.2, sd.error.1, sd.error.2, between.correlation, within.correlation) {
+  participant.id <- rep(seq(n.participants), each = n.measurements)
+  measurements.id <- rep(seq(n.measurements), times = n.participants)
+  random.intercepts <- rmvnorm(n.participants, c(0, 0), matrix(c(sd.random.intercept.1 ^ 2, sd.random.intercept.1 * sd.random.intercept.2 * between.correlation, sd.random.intercept.1 * sd.random.intercept.2 * between.correlation, sd.random.intercept.2 ^ 2), 2, 2))
+  random.intercept.1 <- rep(random.intercepts[, 1], each = n.measurements)
+  random.intercept.2 <- rep(random.intercepts[, 2], each = n.measurements)
+  errors <- rmvnorm(n.participants * n.measurements, c(0, 0), matrix(c(sd.error.1 ^ 2, sd.error.1 * sd.error.2 * within.correlation, sd.error.1 * sd.error.2 * within.correlation, sd.error.2 ^ 2), 2, 2))
+  error.1 <- errors[, 1]
+  error.2 <- errors[, 2]
+  y.1 <- fixed.intercept.1 + random.intercept.1 + error.1
+  y.2 <- fixed.intercept.2 + random.intercept.2 + error.2
+  ys <- c(y.1, y.2)
+  participant.ids <- c(participant.id, participant.id)
+  dimension <- c(rep("1", length(participant.id)), rep("2", length(participant.id)))
+  measurements.ids <- c(measurements.id, measurements.id)
+  model <- lme( 
+    fixed = ys ~ 0 + dimension,
+    random = ~ 0 + dimension | participant.ids,
+    weights = varIdent(form = ~ 1 | dimension),
+    correlation = corSymm(form = ~ 1 | participant.ids / measurements.ids),
+    control = lmeControl(maxIter = 1000, msMaxIter = 1000, msMaxEval = 1000, opt = "optim")
+  )
+  result <- data.frame(
+    fixed.intercept.1 = fixef(model)[[1]],
+    fixed.intercept.2 = fixef(model)[[2]],
+    sd.random.intercept.1 = as.numeric(VarCorr(model)[[4]]),
+    sd.random.intercept.2 = as.numeric(VarCorr(model)[[5]]),
+    sd.error.1 = as.numeric(VarCorr(model)[[6]]),
+    sd.error.2 = as.numeric(VarCorr(model)[[6]]) * coef(varFunc(model$modelStruct$varStruct), uncon = FALSE),
+    between.correlation = as.numeric(VarCorr(model)[[8]]),
+    within.correlation = coef(model$modelStruct$corStruct, uncon = FALSE)
+  )
+  return(result)
+}
+```
+
+# Parameters
+
+```{r}
+parameters <- tibble(
+  parameter.set = seq(10),
+  n.participants = c(100, 400, 100, 100, 100, 100, 100, 100, 100, 100),
+  n.measurements = c(5, 5, 15, 5, 5, 5, 5, 5, 5, 5),
+  fixed.intercept.1 = c(1, 1, 1, 0.6, 1, 1, 1, 1, 1, 1),
+  fixed.intercept.2 = c(0.6, 0.6, 0.6, 4, 0.6, 0.6, 0.6, 0.6, 0.6, 0.6),
+  sd.random.intercept.1 = c(0.5, 0.5, 0.5, 0.5, 0.7, 0.5, 0.5, 0.5, 0.5, 0.5),
+  sd.random.intercept.2 = c(0.4, 0.4, 0.4, 0.4, 0.4, 0.6, 0.4, 0.4, 0.4, 0.4),
+  sd.error.1 = c(0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.4, 0.2, 0.2, 0.2),
+  sd.error.2 = c(0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.5, 0.3, 0.3),
+  between.correlation = c(0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.3, 0.4),
+  within.correlation = c(0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.4)
+)
+parameters
+```
+
+# Estimation
+
+```{r}
+estimated.parameters <- parameters %>%
+  expand_grid(
+    run = seq(50)
+  ) %>%
+  rowwise() %>%
+  mutate(
+    generate.and.estimate.mixed.effects.linear.regression(
+      n.participants = n.participants,
+      n.measurements = n.measurements,
+      fixed.intercept.1 = fixed.intercept.1,
+      fixed.intercept.2 = fixed.intercept.2,
+      sd.random.intercept.1 = sd.random.intercept.1,
+      sd.random.intercept.2 = sd.random.intercept.2,
+      sd.error.1 = sd.error.1,
+      sd.error.2 = sd.error.2,
+      between.correlation = between.correlation,
+      within.correlation = within.correlation
+    )
+  ) %>%
+  ungroup()
+estimated.parameters
+```
+
+# Compare Methods
+
+
+# Visualise Estimated Parameters
+
+```{r}
+ggplot() +
+  geom_density(
+    mapping = aes(
+      x = value,
+      y = after_stat(scaled),
+      fill = name
+    ),
+    data = estimated.parameters %>%
+      pivot_longer(
+        cols = c("fixed.intercept.1", "fixed.intercept.2", "sd.random.intercept.1", "sd.random.intercept.2", "sd.error.1", "sd.error.2", "between.correlation", "within.correlation")
+      ),
+    alpha = 0.3
+  ) +
+  geom_vline(
+    mapping = aes(
+      xintercept = value,
+      col = name
+    ),
+    data = parameters %>%
+      pivot_longer(
+        cols = c("fixed.intercept.1", "fixed.intercept.2", "sd.random.intercept.1", "sd.random.intercept.2", "sd.error.1", "sd.error.2", "between.correlation", "within.correlation")
+      )
+  ) +
+  facet_grid(
+    cols = vars(name),
+    rows = vars(parameter.set),
+    scales = "free"
+  )
+```

@@ -1,0 +1,682 @@
+---
+title: "B-Spline Mixed Effects Linear Regression Simulation Study"
+author: "Laurens Bogaardt"
+date: "2024-04-01"
+output:
+  html_document:
+    df_print: paged
+    fig_width: 10
+    fig.align: center
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    theme: united
+    code_folding: show
+---
+
+<style>
+body{text-align: justify}
+</style>
+
+# Introduction
+
+This document describes a simulation study of a mixed effects linear regression model with a 3-part B-spline as a fixed effect and a single random intercept per participant. First, the model is used to generate multiple datasets which are subsequently analysed to estimate the model's parameters via maximum likelihood. Various estimation methods are used and compared. All methods result in the same estimates but some are computationally faster than others. The document uses the packages _tidyverse_, _JOPS_, _nlme_, _lme4_, _gamlss_, _mgcv_ and _matrixStats_.
+
+```{r results = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(JOPS)
+library(nlme)
+library(lme4)
+library(gamlss)
+library(mgcv)
+library(matrixStats)
+```
+
+# Functions
+
+The following function generates data for a mixed effects linear regression model. The subsequent functions estimate the parameters which best fit these data assuming the same model. This is done using multiple estimation methods which all result in the same maximum likelihood estimates.
+
+```{r}
+generate.data <- function(n.participants, n.measurements, logit.ratio.1, logit.ratio.2, logit.ratio.3) {
+  participant.id <- factor(rep(seq(n.participants), each = n.measurements))
+  x <- rep(runif(n.participants), each = n.measurements)
+  x.matrix <- bbase(x, xl = 0, xr = 1, nseg = 1, bdeg = 2)
+  logit.ratio <- c(x.matrix %*% c(logit.ratio.1, logit.ratio.2, logit.ratio.3))
+  sd.random.intercept <- exp(logit.ratio) / (1 + exp(logit.ratio))
+  sd.error <- 1 / (1 + exp(logit.ratio))
+  random.intercept <- sd.random.intercept * rep(rnorm(n.participants), each = n.measurements)
+  error <- sd.error * rnorm(n.participants * n.measurements)
+  y <- random.intercept + error
+  data <- data.frame(
+    n.participants = n.participants,
+    n.measurements = n.measurements,
+    logit.ratio.1 = logit.ratio.1,
+    logit.ratio.2 = logit.ratio.2,
+    logit.ratio.3 = logit.ratio.3,
+    participant.id = participant.id,
+    x = x,
+    y = y
+  )
+  return(data)
+}
+```
+
+The following estimation method makes use of the _gamlss_ function of the package _gamlss_ and uses the _re_ function to specify the random part of the model.
+
+```{r}
+estimate.model.and.get.coefficients.gamlss1 <- function(data) {
+  data.gamlss1 <<- data
+  ptm <- proc.time()
+  model <- gamlss(
+    formula = y ~ 0 + re(fixed = ~ 0 + bbase(x, xl = 0, xr = 1, nseg = 1, bdeg = 2), random = ~ 0 + bbase(x, xl = 0, xr = 1, nseg = 1, bdeg = 2) | participant.id),
+    sigma.formula = ~ 0 + bbase(x, xl = 0, xr = 1, nseg = 1, bdeg = 2),
+    family = NO(
+      mu.link = "log",
+      sigma.link = "log"
+    ),
+    data = data.gamlss1,
+    trace = FALSE
+  )
+  time <- proc.time() - ptm
+  result <- c(
+    fixed.coefficient.1 = fixef(getSmo(model))[[1]],
+    fixed.coefficient.2 = fixef(getSmo(model))[[2]],
+    fixed.coefficient.3 = fixef(getSmo(model))[[3]],
+    sd.random.intercept = as.numeric(VarCorr(getSmo(model))[[3]]),
+    sd.error = as.numeric(VarCorr(getSmo(model))[[4]]) * exp(model[["sigma.coefficients"]][["(Intercept)"]]),
+    time = time[[3]]
+  )
+  return(result)
+}
+```
+
+The following estimation method makes use of the _gamlss_ function of the package _gamlss_ and uses the _random_ function to specify the random part of the model.
+
+```{r}
+estimate.model.and.get.coefficients.gamlss2 <- function(data) {
+  data.gamlss2 <<- data
+  ptm <- proc.time()
+  model <- gamlss(
+    formula = y ~ 0 + bbase(x, xl = 0, xr = 1, nseg = 1, bdeg = 3) + random(participant.id),
+    sigma.formula = ~ 1,
+    family = NO(
+      mu.link = "identity",
+      sigma.link = "log"
+    ),
+    data = data.gamlss2,
+    trace = FALSE
+  )
+  time <- proc.time() - ptm
+  result <- c(
+    fixed.coefficient.1 = model$mu.coefficients[[1]],
+    fixed.coefficient.2 = model$mu.coefficients[[2]],
+    fixed.coefficient.3 = model$mu.coefficients[[3]],
+    fixed.coefficient.4 = model$mu.coefficients[[4]],
+    sd.random.intercept = getSmo(model, "mu")[["sigb"]],
+    sd.error = getSmo(model, "mu")[["sige"]] * exp(model$sigma.coefficients),
+    time = time[[3]]
+  )
+  return(result)
+}
+```
+
+The following estimation method makes use of the _gam_ function of the package _mgcv_.
+
+```{r}
+estimate.model.and.get.coefficients.mgcv1 <- function(data) {
+  ptm <- proc.time()
+  model <- gam(
+    formula = y ~ 0 + bbase(x, xl = 0, xr = 1, nseg = 1, bdeg = 3) + s(participant.id, bs = "re"),
+    data = data,
+    method = "ML"
+  )
+  time <- proc.time() - ptm
+  invisible(
+    capture.output(
+      result <- c(
+        fixed.coefficient.1 = coef(model)[[1]],
+        fixed.coefficient.2 = coef(model)[[2]],
+        fixed.coefficient.3 = coef(model)[[3]],
+        fixed.coefficient.4 = coef(model)[[4]],
+        sd.random.intercept = gam.vcomp(model)[[1]],
+        sd.error = gam.vcomp(model)[[2]],
+        time = time[[3]]
+      )
+    )
+  )
+  return(result)
+}
+```
+
+The following estimation method makes use of the _gamm_ function of the package _mgcv_.
+
+```{r}
+estimate.model.and.get.coefficients.mgcv2 <- function(data) {
+  ptm <- proc.time()
+  model <- gamm(
+    formula = y ~ 0 + bbase(x, xl = 0, xr = 1, nseg = 1, bdeg = 3),
+    random = list(participant.id = ~ 1),
+    data = data,
+    method = "ML"
+  )
+  time <- proc.time() - ptm
+  result <- c(
+    fixed.coefficient.1 = fixef(model$lme)[[1]],
+    fixed.coefficient.2 = fixef(model$lme)[[2]],
+    fixed.coefficient.3 = fixef(model$lme)[[3]],
+    fixed.coefficient.4 = fixef(model$lme)[[4]],
+    sd.random.intercept = as.numeric(VarCorr(model[["lme"]])[[3]]),
+    sd.error = model$lme[["sigma"]],
+    time = time[[3]]
+  )
+  return(result)
+}
+```
+
+The following estimation method uses a custom likelihood function which is optimised using the function _optim_ and which also makes use of the function _logSumExp_ from the package _matrixStats_.
+
+```{r}
+estimate.model.and.get.coefficients.optim <- function(data) {
+  fixed.coefficient.1 <- data$fixed.coefficient.1[[1]]
+  fixed.coefficient.2 <- data$fixed.coefficient.2[[1]]
+  fixed.coefficient.3 <- data$fixed.coefficient.3[[1]]
+  fixed.coefficient.4 <- data$fixed.coefficient.4[[1]]
+  sd.random.intercept <- data$sd.random.intercept[[1]]
+  sd.error <- data$sd.error[[1]]
+  participant.id <- data$participant.id
+  fun.ri <- function(i, y, fixed.effect, log.sd.random.intercept, log.sd.error) {
+    -sum(((fixed.effect + exp(log.sd.random.intercept) * i - y) / exp(log.sd.error)) ^ 2 / 2 + log.sd.error) - i ^ 2 / 2
+  }
+  ri <- seq(-4, 4, 0.05)
+  fun.split <- function(split.data, par) {
+    x <- split.data$x
+    y <- split.data$y
+    x.matrix <- bbase(x, xl = 0, xr = 1, nseg = 1, bdeg = 3)
+    fixed.effect <- c(x.matrix %*% par[seq(4)])
+    log.sd.random.intercept <- par[[5]]
+    log.sd.error <- par[[6]]
+    logSumExp(sapply(ri, fun.ri, y, fixed.effect, log.sd.random.intercept, log.sd.error))
+  }
+  data.split <- split(data[c("x", "y")], participant.id)
+  fun.optim <- function(par) {
+    -sum(sapply(data.split, fun.split, par))
+  }
+  ptm <- proc.time()
+  model <- optim(
+    par = c(fixed.coefficient.1, fixed.coefficient.2, fixed.coefficient.3, fixed.coefficient.4, log(sd.random.intercept), log(sd.error)),
+    fn = fun.optim,
+    method = "BFGS"
+  )
+  time <- proc.time() - ptm
+  result <- c(
+    fixed.coefficient.1 = model$par[[1]],
+    fixed.coefficient.2 = model$par[[2]],
+    fixed.coefficient.3 = model$par[[3]],
+    fixed.coefficient.4 = model$par[[4]],
+    sd.random.intercept = exp(model$par[[5]]),
+    sd.error = exp(model$par[[6]]),
+    time = time[[3]]
+  )
+  return(result)
+}
+```
+
+The following estimation method uses an analytic expression for the least-squares estimates assuming a fixed standard deviation for the random intercept, and uses a custom likelihood function which is optimised using the function _optimise_ to find the best fitting standard deviation of the random intercept.
+
+```{r}
+estimate.model.and.get.coefficients.gls <- function(data) {
+  n.participants <- data$n.participants[[1]]
+  n.measurements <- data$n.measurements[[1]]
+  logit.ratio.1 <- data$logit.ratio.1[[1]]
+  logit.ratio.2 <- data$logit.ratio.2[[1]]
+  logit.ratio.3 <- data$logit.ratio.3[[1]]
+  x <- data$x
+  y <- data$y
+  x.matrix <- bbase(x, xl = 0, xr = 1, nseg = 1, bdeg = 2)
+  x.2 <- x[seq(1, n.participants * n.measurements, n.measurements)]
+  id.2 <- data$participant.id[seq(1, n.participants * n.measurements, n.measurements)]
+  x.matrix.2 <- bbase(x.2, xl = 0, xr = 1, nseg = 1, bdeg = 2)
+  make.matrix <- function(v1, v2, n) {
+    diag(v1, n) + matrix(v2, n, n)
+  }
+  y.split <- split(data$y, data$participant.id)
+  x.split <- split(x.matrix.2, id.2)
+  measur <- lapply(y.split, length)
+  ff <- function(x, y, measur, par) {
+    logit.ratio <- sum(x * par)
+    sd.random.intercept <- exp(logit.ratio) / (1 + exp(logit.ratio))
+    sd.error <- 1 / (1 + exp(logit.ratio))
+    covariance.matrix <- make.matrix(sd.error ^ 2, sd.random.intercept ^ 2, measur)
+    chol.matrix <- chol(covariance.matrix)
+    z <- forwardsolve(t(chol.matrix), y)
+    log.sqrt.det <- sum(log(diag(chol.matrix)))
+    loglikelihood <- - z %*% z / 2 - log.sqrt.det - log(2 * pi) * (measur / 2)
+    return(loglikelihood)
+  }
+  fun.gls <- function(par) {
+    loglikelihood <- sum(mapply(
+      ff,
+      x.split,
+      y.split,
+      measur,
+      MoreArgs = list(par = par)
+    ))
+    return(loglikelihood)
+  }
+  ptm <- proc.time()
+  optimise.correlation.gls <- optim(
+    par = c(logit.ratio.1, logit.ratio.2, logit.ratio.3),
+    fn = fun.gls,
+    control = list(fnscale = -1)
+  )
+  time <- proc.time() - ptm
+  par <- optimise.correlation.gls$par
+  result <- c(
+    logit.ratio.1 = par[[1]],
+    logit.ratio.2 = par[[2]],
+    logit.ratio.3 = par[[3]],
+    time = time[[3]]
+  )
+  return(result)
+}
+```
+
+The following function combines all previous estimation functions to be able to estimate and compare model parameters on the same input dataset.
+
+```{r}
+estimate.all.models.and.get.coefficients <- function(data) {
+  result <- data.frame(
+    method = c("gls"),
+    rbind(
+      estimate.model.and.get.coefficients.gls(data)
+    )
+  )
+  return(result)
+}
+```
+
+# Parameters
+
+The mixed effects linear regression takes various input parameters. These can all be varied, one by one, which results in a table of input parameters on which the simulation study is performed.
+
+```{r}
+parameters <- tibble(
+  parameter.set = seq(4),
+  n.participants = c(200, 800, 200, 200),
+  n.measurements = c(4, 4, 16, 4),
+  logit.ratio.1 = c(-3, -3, -3, 0),
+  logit.ratio.2 = c(2, 2, 2, 1),
+  logit.ratio.3 = c(-1, -1, -1, 1)
+)
+parameters
+```
+
+# Estimation
+
+For each set of input parameters, the generation and estimation procedure is applied multiple times. Every run results in slightly different estimates but all methods should produce the same values. These are compared below.
+
+```{r}
+estimated.parameters <- parameters %>%
+  expand_grid(
+    run = seq(4)
+  ) %>%
+  reframe(
+    generate.data(
+      n.participants = n.participants,
+      n.measurements = n.measurements,
+      logit.ratio.1 = logit.ratio.1,
+      logit.ratio.2 = logit.ratio.2,
+      logit.ratio.3 = logit.ratio.3
+    ) %>%
+      estimate.all.models.and.get.coefficients(),
+    .by = c(parameter.set, run)
+  )
+estimated.parameters
+```
+
+# Compare Estimates
+
+The output of the simulation study contains estimated parameters for all the included methods. These should all give the same result. An easy way to check this is to plot the estimates of two methods together, one on the x-axis and one on the y-axis. The points should fall on a 45-degree line. Let's first compare the methods from _nlme_ and _lme4_.
+
+```{r}
+# ggplot(
+#   mapping = aes(
+#     x = nlme,
+#     y = lme4
+#   ),
+#   data = estimated.parameters %>%
+#     select(-time) %>%
+#     pivot_longer(c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "fixed.coefficient.4", "sd.random.intercept", "sd.error")) %>%
+#     pivot_wider(names_from = "method"),
+#     alpha = 0.1
+# ) +
+#   geom_point() +
+#   geom_smooth(
+#     formula = y ~ x,
+#     method = "lm",
+#     col = "green"
+#   ) +
+#   geom_abline(
+#     intercept = 0,
+#     slope = 1
+#   ) +
+#   facet_grid(
+#     cols = vars(name),
+#     rows = vars(parameter.set),
+#     scales = "free"
+#   )
+# ```
+# 
+# Let's now compare the methods from _nlme_ and _gamlss1_.
+# 
+# ```{r}
+# ggplot(
+#   mapping = aes(
+#     x = nlme,
+#     y = gamlss1
+#   ),
+#   data = estimated.parameters %>%
+#     select(-time) %>%
+#     pivot_longer(c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "fixed.coefficient.4", "sd.random.intercept", "sd.error")) %>%
+#     pivot_wider(names_from = "method"),
+#     alpha = 0.1
+# ) +
+#   geom_point() +
+#   geom_smooth(
+#     formula = y ~ x,
+#     method = "lm",
+#     col = "green"
+#   ) +
+#   geom_abline(
+#     intercept = 0,
+#     slope = 1
+#   ) +
+#   facet_grid(
+#     cols = vars(name),
+#     rows = vars(parameter.set),
+#     scales = "free"
+#   )
+# ```
+# 
+# Let's now compare the methods from _nlme_ and _gamlss2_.
+# 
+# ```{r}
+# ggplot(
+#   mapping = aes(
+#     x = nlme,
+#     y = gamlss2
+#   ),
+#   data = estimated.parameters %>%
+#     select(-time) %>%
+#     pivot_longer(c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "fixed.coefficient.4", "sd.random.intercept", "sd.error")) %>%
+#     pivot_wider(names_from = "method"),
+#     alpha = 0.1
+# ) +
+#   geom_point() +
+#   geom_smooth(
+#     formula = y ~ x,
+#     method = "lm",
+#     col = "green"
+#   ) +
+#   geom_abline(
+#     intercept = 0,
+#     slope = 1
+#   ) +
+#   facet_grid(
+#     cols = vars(name),
+#     rows = vars(parameter.set),
+#     scales = "free"
+#   )
+# ```
+# 
+# Let's now compare the methods from _nlme_ and _mgcv1_.
+# 
+# ```{r}
+# ggplot(
+#   mapping = aes(
+#     x = nlme,
+#     y = mgcv1
+#   ),
+#   data = estimated.parameters %>%
+#     select(-time) %>%
+#     pivot_longer(c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "fixed.coefficient.4", "sd.random.intercept", "sd.error")) %>%
+#     pivot_wider(names_from = "method"),
+#     alpha = 0.1
+# ) +
+#   geom_point() +
+#   geom_smooth(
+#     formula = y ~ x,
+#     method = "lm",
+#     col = "green"
+#   ) +
+#   geom_abline(
+#     intercept = 0,
+#     slope = 1
+#   ) +
+#   facet_grid(
+#     cols = vars(name),
+#     rows = vars(parameter.set),
+#     scales = "free"
+#   )
+# ```
+# 
+# Let's now compare the methods from _nlme_ and _mgcv2_.
+# 
+# ```{r}
+# ggplot(
+#   mapping = aes(
+#     x = nlme,
+#     y = mgcv2
+#   ),
+#   data = estimated.parameters %>%
+#     select(-time) %>%
+#     pivot_longer(c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "fixed.coefficient.4", "sd.random.intercept", "sd.error")) %>%
+#     pivot_wider(names_from = "method"),
+#     alpha = 0.1
+# ) +
+#   geom_point() +
+#   geom_smooth(
+#     formula = y ~ x,
+#     method = "lm",
+#     col = "green"
+#   ) +
+#   geom_abline(
+#     intercept = 0,
+#     slope = 1
+#   ) +
+#   facet_grid(
+#     cols = vars(name),
+#     rows = vars(parameter.set),
+#     scales = "free"
+#   )
+# ```
+# 
+# Let's now compare the methods from _nlme_ and _optim_.
+# 
+# ```{r}
+# ggplot(
+#   mapping = aes(
+#     x = nlme,
+#     y = optim
+#   ),
+#   data = estimated.parameters %>%
+#     select(-time) %>%
+#     pivot_longer(c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "fixed.coefficient.4", "sd.random.intercept", "sd.error")) %>%
+#     pivot_wider(names_from = "method"),
+#     alpha = 0.1
+# ) +
+#   geom_point() +
+#   geom_smooth(
+#     formula = y ~ x,
+#     method = "lm",
+#     col = "green"
+#   ) +
+#   geom_abline(
+#     intercept = 0,
+#     slope = 1
+#   ) +
+#   facet_grid(
+#     cols = vars(name),
+#     rows = vars(parameter.set),
+#     scales = "free"
+#   )
+# ```
+# 
+# Finally, let's compare the methods from _nlme_ and _gls_.
+# 
+# ```{r}
+# ggplot(
+#   mapping = aes(
+#     x = nlme,
+#     y = gls
+#   ),
+#   data = estimated.parameters %>%
+#     select(-time) %>%
+#     pivot_longer(c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "fixed.coefficient.4", "sd.random.intercept", "sd.error")) %>%
+#     pivot_wider(names_from = "method"),
+#     alpha = 0.1
+# ) +
+#   geom_point() +
+#   geom_smooth(
+#     formula = y ~ x,
+#     method = "lm",
+#     col = "green"
+#   ) +
+#   geom_abline(
+#     intercept = 0,
+#     slope = 1
+#   ) +
+#   facet_grid(
+#     cols = vars(name),
+#     rows = vars(parameter.set),
+#     scales = "free"
+#   )
+```
+
+All methods give the same result. Only the _optim_ method, which estimated the model using a custom likelihood function, gave slightly different result. This is probably due to the low resolution of the numerical integration used in this method, and not due to a fundamental difference in the model.
+
+# Compare Computation Time
+
+We have seen that all methods produce the same estimates. However, some methods are computationally faster than others. The table below provides the mean estimation time.
+
+```{r}
+estimated.parameters %>%
+  group_by(parameter.set, method) %>%
+  summarise(
+    time = mean(time),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    values_from = time,
+    names_from = method
+  )
+```
+
+The computation times can also be plot as densities.
+
+```{r}
+ggplot() +
+  geom_density(
+    mapping = aes(
+      x = time,
+      col = method
+    ),
+    data = estimated.parameters
+  ) +
+  facet_wrap(
+    facets = ~ method,
+    scales = "free_y"
+  )
+```
+
+# Visualise Estimated Parameters
+
+Given that the _lme4_ method was computationally fast, and that is gave the same estimates as all other methods, let's use this to estimate even more values for generated datasets.
+
+```{r}
+estimated.parameters <- parameters %>%
+  expand_grid(
+    run = seq(100)
+  ) %>%
+  reframe(
+    generate.data(
+      n.participants = n.participants,
+      n.measurements = n.measurements,
+      logit.ratio.1 = logit.ratio.1,
+      logit.ratio.2 = logit.ratio.2,
+      logit.ratio.3 = logit.ratio.3
+    ) %>%
+      estimate.model.and.get.coefficients.gls() %>%
+      as_tibble_row(),
+    .by = c(parameter.set, run)
+  )
+estimated.parameters
+```
+
+We now visualise the distribution of the estimated parameters, for each set of the input parameters. We can add a vertical line to indicate the value of the original, input parameter.
+
+```{r}
+ggplot() +
+  geom_density(
+    mapping = aes(
+      x = value,
+      y = after_stat(scaled),
+      fill = name
+    ),
+    data = estimated.parameters %>%
+      pivot_longer(
+        cols = matches("log.")
+      ),
+    alpha = 0.3
+  ) +
+  geom_vline(
+    mapping = aes(
+      xintercept = value,
+      col = name
+    ),
+    data = parameters %>%
+      pivot_longer(
+        cols = matches("log.")
+      )
+  ) +
+  facet_grid(
+    cols = vars(name),
+    rows = vars(parameter.set),
+    scales = "free"
+  )
+```
+
+# Visualise Parameter Correlations
+
+The estimated parameters may also correlate with each other. This is first visualised by listing the Pearson correlation in a matrix.
+
+```{r}
+ggplot(
+  mapping = aes(
+    x = parameter.1,
+    y = parameter.2,
+    fill = correlation,
+    label = sprintf("%.2f", correlation)
+  ),
+  data = estimated.parameters %>%
+    group_by(parameter.set) %>%
+    reframe(
+      expand_grid(
+        parameter.1 = c("logit.ratio.1", "logit.ratio.2", "logit.ratio.3"),
+        parameter.2 = c("logit.ratio.1", "logit.ratio.2", "logit.ratio.3")
+      ),
+      correlation = c(cor(data.frame(logit.ratio.1, logit.ratio.2, logit.ratio.3)))
+    )
+) +
+  geom_tile(alpha = 0.5) +
+  geom_text() +
+  scale_fill_viridis_c() +
+  guides(fill = "none") +
+  labs(
+    x = NULL,
+    y = NULL
+  ) +
+  facet_wrap(
+    facets = vars(parameter.set)
+  )
+```

@@ -1,0 +1,914 @@
+---
+title: "P-Spline Mixed Effects Model"
+author: "Laurens Bogaardt"
+date: "2024-04-01"
+output:
+  html_document:
+    df_print: paged
+    fig_width: 10
+    fig.align: center
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    theme: united
+    code_folding: show
+---
+
+<style>
+body{text-align: justify}
+</style>
+
+# Introduction
+
+This document describes a simulation study of a mixed effects linear regression model with a 5-part P-spline as a fixed effect and a single random intercept per participant. First, the model is used to generate multiple datasets which are subsequently analysed to estimate the model's parameters via maximum likelihood. Various estimation methods are used and compared. All methods result in the same estimates but some are computationally faster than others. The document uses the packages _tidyverse_, _JOPS_, _nlme_, _lme4_, _gamlss_, _mgcv_ and _matrixStats_.
+
+```{r results = FALSE, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(JOPS)
+library(nlme)
+library(lme4)
+library(gamlss)
+library(mgcv)
+library(matrixStats)
+set.seed(123)
+```
+
+# Functions
+
+The following function generates data for a mixed effects linear regression model. The subsequent functions estimate the parameters which best fit these data assuming the same model. This is done using multiple estimation methods which all result in the same maximum likelihood estimates.
+
+```{r}
+unlockBinding("ps", as.environment("package:gamlss"))
+assign(
+  x = "ps",
+  value = function(x, df = 3, lambda = NULL, ps.intervals = 20, degree = 3, order = 3) {
+    scall <- deparse(sys.call())
+    if (is.null(lambda) & is.null(df)) 
+        stop("df or lambda should be set \n")
+    number.knots <- ps.intervals + 2 * degree + 1
+    x.domain <- as.vector(x)
+    xl <- min(x.domain)
+    xr <- max(x.domain)
+    xmax <- 1
+    xmin <- 0
+    dx <- (xmax - xmin)/ps.intervals
+    nx <- names(x.domain)
+    nax <- is.na(x.domain)
+    if (nas <- any(nax)) 
+        x.domain <- x[!nax]
+    sorder <- degree + 1
+    Aknots <- range(x.domain)
+    nAknots <- ps.intervals - 1
+    if (nAknots < 1) {
+        nAknots <- 1
+        warning(paste("ps.intervals was too small; have used 2"))
+    }
+    if (nAknots > 0) {
+        Aknots <- seq(from = xmin - degree * dx, to = xmax + 
+            degree * dx, by = dx)
+    }
+    else knots <- NULL
+    basis <- splineDesign(Aknots, x.domain, sorder, 0 * x.domain)
+    n.col <- ncol(basis)
+    dimnames(basis) <- list(1:nrow(basis), 1:n.col)
+    if ((order - n.col + 1) > 0) {
+        order <- n.col - 1
+        warning(paste("order was too large; have used ", n.col - 
+            1))
+    }
+    if (df < 1) 
+        warning("the df are set to 1")
+    df <- if (df < 1) 
+        1
+    else df + 2
+    if (!is.null(lambda)) {
+        if (lambda < 0) {
+            lambda <- 0
+            warning(paste("lambda was negative; have used ", 
+                lambda))
+        }
+    }
+    aug <- diag(n.col)
+    if (order != 0) {
+        for (tt in 1:order) {
+            aug <- diff(aug)
+        }
+    }
+    pen.aug <- aug
+    xvar <- x
+    attr(xvar, "knots") <- Aknots
+    attr(xvar, "pen.augment") <- pen.aug
+    attr(xvar, "design.matrix") <- basis
+    attr(xvar, "call") <- substitute(gamlss.ps(data[[scall]], 
+        z, w))
+    attr(xvar, "lambda") <- lambda
+    attr(xvar, "df") <- df
+    attr(xvar, "order") <- order
+    xvar
+  },
+  env = as.environment("package:gamlss")
+)
+unlockBinding("smooth.construct.ps.smooth.spec", as.environment("package:mgcv"))
+assign(
+  x = "smooth.construct.ps.smooth.spec",
+  value = function(object, data, knots){
+    if (length(object$p.order) == 1) 
+        m <- rep(object$p.order, 2)
+    else m <- object$p.order
+    m[is.na(m)] <- 2
+    object$p.order <- m
+    if (object$bs.dim < 0) 
+        object$bs.dim <- max(10, m[1] + 1)
+    nk <- object$bs.dim - m[1]
+    if (nk <= 0) 
+        stop("basis dimension too small for b-spline order")
+    if (length(object$term) != 1) 
+        stop("Basis only handles 1D smooths")
+    x <- data[[object$term]]
+    k <- knots[[object$term]]
+    if (is.null(k)) {
+        xl <- min(x)
+        xu <- max(x)
+    }
+    else if (length(k) == 2) {
+        xl <- min(k)
+        xu <- max(k)
+        if (xl > min(x) || xu < max(x)) 
+            stop("knot range does not include data")
+    }
+    if (is.null(k) || length(k) == 2) {
+        xr <- xu - xl
+        xl <- 0
+        xu <- 1
+        dx <- (xu - xl)/(nk - 1)
+        k <- seq(xl - dx * (m[1] + 1), xu + dx * (m[1] + 1), 
+            length = nk + 2 * m[1] + 2)
+    }
+    else {
+        if (length(k) != nk + 2 * m[1] + 2) 
+            stop(paste("there should be ", nk + 2 * m[1] + 2, 
+                " supplied knots"))
+    }
+    if (is.null(object$deriv)) 
+        object$deriv <- 0
+    object$X <- splines::spline.des(k, x, m[1] + 2, x * 0 + object$deriv)$design
+    if (!is.null(k)) {
+        if (sum(colSums(object$X) == 0) > 0) 
+            warning("there is *no* information about some basis coefficients")
+    }
+    if (length(unique(x)) < object$bs.dim) 
+        warning("basis dimension is larger than number of unique covariates")
+    if (is.null(object$mono)) 
+        object$mono <- 0
+    if (object$mono != 0) {
+        p <- ncol(object$X)
+        B <- matrix(as.numeric(rep(1:p, p) >= rep(1:p, each = p)), 
+            p, p)
+        if (object$mono < 0) 
+            B[, 2:p] <- -B[, 2:p]
+        object$D <- cbind(0, -diff(diag(p - 1)))
+        if (object$mono == 2 || object$mono == -2) {
+            object$D <- object$D[, -1]
+            B <- B[, -1]
+            object$null.space.dim <- 1
+            object$g.index <- rep(TRUE, p - 1)
+            object$C <- matrix(0, 0, ncol(object$X))
+        }
+        else {
+            object$g.index <- c(FALSE, rep(TRUE, p - 1))
+            object$null.space.dim <- 2
+        }
+        object$X <- object$X %*% B
+        object$S <- list(crossprod(object$D))
+        object$B <- B
+        object$rank <- p - 2
+    }
+    else {
+        object$D <- S <- if (m[2] > 0) 
+            diff(diag(object$bs.dim), differences = m[2])
+        else diag(object$bs.dim)
+        object$S <- list(crossprod(S))
+        object$rank <- object$bs.dim - m[2]
+        object$null.space.dim <- m[2]
+    }
+    object$knots <- k
+    object$m <- m
+    class(object) <- "pspline.smooth"
+    object
+  },
+  envir = as.environment("package:mgcv")
+)
+```
+
+```{r}
+generate.data <- function(n.participants, n.measurements, fixed.coefficient.1, fixed.coefficient.2, fixed.coefficient.3, fixed.coefficient.4, fixed.coefficient.5, sd.random.intercept, sd.error, lambda) {
+  participant.id <- factor(rep(seq(n.participants), each = n.measurements))
+  x <- runif(n.participants * n.measurements)
+  x[[1]] <- 0
+  x[[length(x)]] <- 1
+  x.matrix <- bbase(x, xl = 0, xr = 1, nseg = 2, bdeg = 3)
+  fixed.effect <- c(x.matrix %*% c(fixed.coefficient.1, fixed.coefficient.2, fixed.coefficient.3, fixed.coefficient.4, fixed.coefficient.5))
+  random.intercept <- rep(sd.random.intercept * rnorm(n.participants), each = n.measurements)
+  y <- fixed.effect + random.intercept + sd.error * rnorm(n.participants * n.measurements)
+  data <- data.frame(
+    n.participants = n.participants,
+    n.measurements = n.measurements,
+    fixed.coefficient.1 = fixed.coefficient.1,
+    fixed.coefficient.2 = fixed.coefficient.2,
+    fixed.coefficient.3 = fixed.coefficient.3,
+    fixed.coefficient.4 = fixed.coefficient.4,
+    fixed.coefficient.5 = fixed.coefficient.5,
+    sd.random.intercept = sd.random.intercept,
+    sd.error = sd.error,
+    participant.id = participant.id,
+    x = x,
+    y = y,
+    lambda = lambda
+  )
+  return(data)
+}
+```
+
+The following estimation method makes use of the _lme_ function from the package _nlme_.
+
+```{r}
+estimate.model.and.get.coefficients.nlme <- function(data) {
+  ptm <- proc.time()
+  model <- lme(
+    fixed = y ~ 0 + bbase(x, xl = 0, xr = 1, nseg = 2, bdeg = 3),
+    data = data,
+    random = ~ 1 | participant.id,
+    method = "ML"
+  )
+  time <- proc.time() - ptm
+  result <- c(
+    fixed.coefficient.1 = fixef(model)[[1]],
+    fixed.coefficient.2 = fixef(model)[[2]],
+    fixed.coefficient.3 = fixef(model)[[3]],
+    fixed.coefficient.4 = fixef(model)[[4]],
+    fixed.coefficient.5 = fixef(model)[[5]],
+    sd.random.intercept = as.numeric(VarCorr(model)[[3]]),
+    sd.error = model$sigma,
+    computation.time = time[[3]]
+  )
+  return(result)
+}
+```
+
+The following estimation method makes use of the _lmer_ function of the package _lme4_.
+
+```{r}
+estimate.model.and.get.coefficients.lme4 <- function(data) {
+  ptm <- proc.time()
+  model <- lmer(
+    formula = y ~ 0 + bbase(x, xl = 0, xr = 1, nseg = 2, bdeg = 3) + (1 | participant.id),
+    data = data,
+    REML = FALSE
+  )
+  time <- proc.time() - ptm
+  result <- c(
+    fixed.coefficient.1 = fixef(model)[[1]],
+    fixed.coefficient.2 = fixef(model)[[2]],
+    fixed.coefficient.3 = fixef(model)[[3]],
+    fixed.coefficient.4 = fixef(model)[[4]],
+    fixed.coefficient.5 = fixef(model)[[5]],
+    sd.random.intercept = sqrt(unlist(VarCorr(model)))[[1]],
+    sd.error = summary(model)$sigma,
+    computation.time = time[[3]]
+  )
+  return(result)
+}
+```
+
+The following estimation method makes use of the _gamlss_ function of the package _gamlss_ and uses the _re_ function to specify the random part of the model.
+
+```{r}
+# estimate.model.and.get.coefficients.gamlss1 <- function(data) {
+#   data.gamlss1 <<- data
+#   ptm <- proc.time()
+#   model <- gamlss(
+#     formula = y ~ 0 + re(fixed = ~ 0 + ps(x, df = 5, lambda = 0, ps.intervals = 2, degree = 3, order = 2), random = ~ 1 | participant.id),
+#     sigma.formula = ~ 1,
+#     family = NO(
+#       mu.link = "identity",
+#       sigma.link = "log"
+#     ),
+#     data = data.gamlss1,
+#     trace = FALSE
+#   )
+#   time <- proc.time() - ptm
+#   fixed.coef <- coef(lm(predict(model, type = "terms")[,1] ~ 0 + bbase(data$x, xl = 0, xr = 1, nseg = 2, bdeg = 3)))
+#   result <- c(
+#     fixed.coefficient.1 = fixed.coef[[1]],
+#     fixed.coefficient.2 = fixed.coef[[2]],
+#     fixed.coefficient.3 = fixed.coef[[3]],
+#     fixed.coefficient.4 = fixed.coef[[4]],
+#     fixed.coefficient.5 = fixed.coef[[5]],
+#     sd.random.intercept = as.numeric(VarCorr(getSmo(model))[[3]]),
+#     sd.error = as.numeric(VarCorr(getSmo(model))[[4]]) * exp(model[["sigma.coefficients"]][["(Intercept)"]]),
+#     time = time[[3]]
+#   )
+#   return(result)
+# }
+```
+
+The following estimation method makes use of the _gamlss_ function of the package _gamlss_ and uses the _random_ function to specify the random part of the model.
+
+```{r}
+estimate.model.and.get.coefficients.gamlss2 <- function(data) { # https://rdrr.io/cran/gamlss/src/R/PS.R
+  data.gamlss2 <<- data
+  lambda <- data$lambda[[1]]
+  ptm <- proc.time()
+  model <- gamlss(
+    formula = formula(paste0("y ~ 0 + ps(x, df = 5, lambda = ", lambda, ", ps.intervals = 2, degree = 3, order = 2) + random(participant.id)")),
+    sigma.formula = ~ 1,
+    family = NO(
+      mu.link = "identity",
+      sigma.link = "log"
+    ),
+    data = data.gamlss2,
+    trace = FALSE
+  )
+  time <- proc.time() - ptm
+  fixed.coef <- coef(lm(predict(model, type = "terms")[,1] ~ 0 + bbase(data$x, xl = 0, xr = 1, nseg = 2, bdeg = 3)))
+  result <- c(
+    fixed.coefficient.1 = fixed.coef[[1]],
+    fixed.coefficient.2 = fixed.coef[[2]],
+    fixed.coefficient.3 = fixed.coef[[3]],
+    fixed.coefficient.4 = fixed.coef[[4]],
+    fixed.coefficient.5 = fixed.coef[[5]],
+    sd.random.intercept = model[["mu.coefSmo"]][[2]][["sigb"]],
+    sd.error = model[["mu.coefSmo"]][[2]][["sige"]] * exp(model$sigma.coefficients[[1]]),
+    computation.time = time[[3]]
+  )
+  return(result)
+}
+```
+
+The following estimation method makes use of the _gam_ function of the package _mgcv_.
+
+```{r}
+# estimate.model.and.get.coefficients.mgcv <- function(data) {
+#   ptm <- proc.time()
+#   model <- gam(
+#     formula = y ~ 0 + s(x, k = 5, bs = "ps", m = c(2, 2), sp = 0) + s(participant.id, bs = "re"),
+#     data = data,
+#     method = "ML"
+#   )
+#   time <- proc.time() - ptm
+#   fixed.coef <- coef(model)[[1]] + coef(lm(predict(model, type = "terms")[,1] ~ 0 + bbase(data$x, xl = 0, xr = 1, nseg = 2, bdeg = 3)))
+#   invisible(
+#     capture.output(
+#       result <- c(
+#         fixed.coefficient.1 = fixed.coef[[1]],
+#         fixed.coefficient.2 = fixed.coef[[2]],
+#         fixed.coefficient.3 = fixed.coef[[3]],
+#         fixed.coefficient.4 = fixed.coef[[4]],
+#         fixed.coefficient.5 = fixed.coef[[5]],
+#         sd.random.intercept = gam.vcomp(model)[[1]],
+#         sd.error = gam.vcomp(model)[[2]],
+#         time = time[[3]]
+#       )
+#     )
+#   )
+#   return(result)
+# }
+```
+
+The following estimation method uses a custom likelihood function which is optimised using the function _optim_ and which also makes use of the function _logSumExp_ from the package _matrixStats_.
+
+```{r}
+estimate.model.and.get.coefficients.optim <- function(data) {
+  fixed.coefficient.1 <- data$fixed.coefficient.1[[1]]
+  fixed.coefficient.2 <- data$fixed.coefficient.2[[1]]
+  fixed.coefficient.3 <- data$fixed.coefficient.3[[1]]
+  fixed.coefficient.4 <- data$fixed.coefficient.4[[1]]
+  fixed.coefficient.5 <- data$fixed.coefficient.5[[1]]
+  sd.random.intercept <- data$sd.random.intercept[[1]]
+  sd.error <- data$sd.error[[1]]
+  participant.id <- data$participant.id
+  lambda <- data$lambda[[1]] / 2 # WHY?
+  p.matrix <- lambda * t(diff(diag(5), diff = 2)) %*% diff(diag(5), diff = 2)
+  fun.ri <- function(i, y, fixed.effect, log.sd.random.intercept, log.sd.error) {
+    -sum(((fixed.effect + exp(log.sd.random.intercept) * i - y) / exp(log.sd.error)) ^ 2 / 2 + log.sd.error + log(2 * pi) / 2) - i ^ 2 / 2 - log(2 * pi) / 2 - log(20)
+  }
+  ri <- seq(-4, 4, 0.05)
+  fun.split <- function(split.data, par) {
+    x <- split.data$x
+    y <- split.data$y
+    x.matrix <- bbase(x, xl = 0, xr = 1, nseg = 2, bdeg = 3)
+    fixed.effect <- c(x.matrix %*% par[seq(5)])
+    log.sd.random.intercept <- par[[6]]
+    log.sd.error <- par[[7]]
+    logSumExp(sapply(ri, fun.ri, y, fixed.effect, log.sd.random.intercept, log.sd.error))
+  }
+  data.split <- split(data[c("x", "y")], participant.id)
+  fun.optim <- function(par) {
+    penalty <- c(t(p.matrix %*% par[seq(5)]) %*% par[seq(5)])
+    -sum(sapply(data.split, fun.split, par)) + penalty
+  }
+  ptm <- proc.time()
+  model <- optim(
+    par = c(fixed.coefficient.1, fixed.coefficient.2, fixed.coefficient.3, fixed.coefficient.4, fixed.coefficient.5, log(sd.random.intercept), log(sd.error)),
+    fn = fun.optim,
+    method = "BFGS"
+  )
+  time <- proc.time() - ptm
+  result <- c(
+    fixed.coefficient.1 = model$par[[1]],
+    fixed.coefficient.2 = model$par[[2]],
+    fixed.coefficient.3 = model$par[[3]],
+    fixed.coefficient.4 = model$par[[4]],
+    fixed.coefficient.5 = model$par[[5]],
+    sd.random.intercept = exp(model$par[[6]]),
+    sd.error = exp(model$par[[7]]),
+    computation.time = time[[3]]
+  )
+  return(result)
+}
+```
+
+The following estimation method uses an analytic expression for the least-squares estimates assuming a fixed standard deviation for the random intercept, and uses a custom likelihood function which is optimised using the function _optimise_ to find the best fitting standard deviation of the random intercept.
+
+```{r}
+estimate.model.and.get.coefficients.gls <- function(data) {
+  n.participants <- data$n.participants[[1]]
+  n.measurements <- data$n.measurements[[1]]
+  x <- data$x
+  y <- data$y
+  lambda <- data$lambda[[1]]
+  x.matrix <- bbase(x, xl = 0, xr = 1, nseg = 2, bdeg = 3)
+  p.matrix <- lambda * t(diff(diag(5), diff = 2)) %*% diff(diag(5), diff = 2)
+  fun.gls <- function(ratio) {
+    correlation.matrix <- bdiag(replicate(n.participants, (diag(1 - ratio, n.measurements) + matrix(ratio, n.measurements, n.measurements)), simplify = FALSE))
+    inverse.correlation.matrix <- solve(correlation.matrix, diag(n.participants * n.measurements))
+    partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix
+    inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+    fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+    residuals <- y - x.matrix %*% fixed.coefficients
+    var.residuals <- var(as.vector(residuals))
+    
+    partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix / var.residuals
+    inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+    fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+    residuals <- y - x.matrix %*% fixed.coefficients
+    var.residuals <- var(as.vector(residuals))
+    partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix / var.residuals
+    inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+    fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+    residuals <- y - x.matrix %*% fixed.coefficients
+    var.residuals <- var(as.vector(residuals))
+    partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix / var.residuals
+    inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+    fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+    residuals <- y - x.matrix %*% fixed.coefficients
+    var.residuals <- var(as.vector(residuals))
+    partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix / var.residuals
+    inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+    fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+    residuals <- y - x.matrix %*% fixed.coefficients
+    var.residuals <- var(as.vector(residuals))
+    partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix / var.residuals
+    inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+    fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+    residuals <- y - x.matrix %*% fixed.coefficients
+    var.residuals <- var(as.vector(residuals))
+    partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix / var.residuals
+    inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+    fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+    residuals <- y - x.matrix %*% fixed.coefficients
+    var.residuals <- var(as.vector(residuals))
+    partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix / var.residuals
+    inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+    fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+    residuals <- y - x.matrix %*% fixed.coefficients
+    var.residuals <- var(as.vector(residuals))
+    partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix / var.residuals
+    inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+    fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+    residuals <- y - x.matrix %*% fixed.coefficients
+    var.residuals <- var(as.vector(residuals))
+    partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix / var.residuals
+    inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+    fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+    residuals <- y - x.matrix %*% fixed.coefficients
+    var.residuals <- var(as.vector(residuals))
+    
+    chol.matrix <- chol(var.residuals * correlation.matrix)
+    log.sqrt.det <- sum(log(diag(chol.matrix)))
+    loglikelihood <- rowSums(-t(p.matrix %*% fixed.coefficients) %*% fixed.coefficients - 0.5 * t(residuals) %*% inverse.correlation.matrix %*% residuals) / var.residuals - log.sqrt.det - log(2 * pi) * (n.participants * n.measurements / 2)
+    return(loglikelihood)
+  }
+  ptm <- proc.time()
+  optimise.correlation.gls <- optimise(
+    f = fun.gls,
+    interval = c(0.0001, 0.9999),
+    maximum = TRUE
+  )
+  ratio <- optimise.correlation.gls$maximum
+  correlation.matrix <- bdiag(replicate(n.participants, (diag(1 - ratio, n.measurements) + matrix(ratio, n.measurements, n.measurements)), simplify = FALSE))
+  inverse.correlation.matrix <- solve(correlation.matrix, diag(n.participants * n.measurements))
+  partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix
+  inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+  fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+  residuals <- x.matrix %*% fixed.coefficients - y
+  sd <- sd(residuals)
+  
+  partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix / sd / sd
+  inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+  fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+  residuals <- x.matrix %*% fixed.coefficients - y
+  sd <- sd(residuals)
+  partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix / sd / sd
+  inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+  fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+  residuals <- x.matrix %*% fixed.coefficients - y
+  sd <- sd(residuals)
+  partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix / sd / sd
+  inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+  fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+  residuals <- x.matrix %*% fixed.coefficients - y
+  sd <- sd(residuals)
+  partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix / sd / sd
+  inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+  fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+  residuals <- x.matrix %*% fixed.coefficients - y
+  sd <- sd(residuals)
+  partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix / sd / sd
+  inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+  fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+  residuals <- x.matrix %*% fixed.coefficients - y
+  sd <- sd(residuals)
+  partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix / sd / sd
+  inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+  fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+  residuals <- x.matrix %*% fixed.coefficients - y
+  sd <- sd(residuals)
+  partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix / sd / sd
+  inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+  fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+  residuals <- x.matrix %*% fixed.coefficients - y
+  sd <- sd(residuals)
+  partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix / sd / sd
+  inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+  fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+  residuals <- x.matrix %*% fixed.coefficients - y
+  sd <- sd(residuals)
+  partial.matrix <- t(x.matrix) %*% inverse.correlation.matrix %*% x.matrix + p.matrix / sd / sd
+  inverse.partial.matrix <- solve(partial.matrix, diag(dim(partial.matrix)[[1]]))
+  fixed.coefficients <- inverse.partial.matrix %*% t(x.matrix) %*% inverse.correlation.matrix %*% y
+  residuals <- x.matrix %*% fixed.coefficients - y
+  sd <- sd(residuals)
+  
+  sd.random.intercept <- sqrt(ratio) * sd
+  sd.error <- sqrt(1 - ratio) * sd
+  time <- proc.time() - ptm
+  result <- c(
+    fixed.coefficient.1 = rowSums(fixed.coefficients)[[1]],
+    fixed.coefficient.2 = rowSums(fixed.coefficients)[[2]],
+    fixed.coefficient.3 = rowSums(fixed.coefficients)[[3]],
+    fixed.coefficient.4 = rowSums(fixed.coefficients)[[4]],
+    fixed.coefficient.5 = rowSums(fixed.coefficients)[[5]],
+    sd.random.intercept = sd.random.intercept,
+    sd.error = sd.error,
+    computation.time = time[[3]]
+  )
+  return(result)
+}
+```
+
+The following function combines all previous estimation functions to be able to estimate and compare model parameters on the same input dataset.
+
+```{r}
+estimate.all.models.and.get.coefficients <- function(data) {
+  result <- data.frame(
+    method = c("gamlss2", "optim", "gls"),
+    rbind(
+      # estimate.model.and.get.coefficients.nlme(data),
+      # estimate.model.and.get.coefficients.lme4(data),
+      # estimate.model.and.get.coefficients.gamlss1(data),
+      estimate.model.and.get.coefficients.gamlss2(data),
+      # estimate.model.and.get.coefficients.mgcv(data),
+      estimate.model.and.get.coefficients.optim(data),
+      estimate.model.and.get.coefficients.gls(data)
+    )
+  )
+  return(result)
+}
+```
+
+# Parameters
+
+The mixed effects linear regression takes various input parameters. These can all be varied, one by one, which results in a table of input parameters on which the simulation study is performed.
+
+```{r}
+parameters <- tibble(
+  parameter.set = seq(8),
+  n.participants = c(100, 100, 400, 100, 100, 100, 100, 100),
+  n.measurements = c(4, 4, 4, 8, 4, 4, 4, 4),
+  fixed.coefficient.1 = c(1, 1, 1, 1, -0.5, 1, 1, 1),
+  fixed.coefficient.2 = c(-1, -1, -1, -1, 0.5, -1, -1, -1),
+  fixed.coefficient.3 = c(2, 2, 2, 2, 1.5, 2, 2, 2),
+  fixed.coefficient.4 = c(1, 1, 1, 1, -0.5, 1, 1, 1),
+  fixed.coefficient.5 = c(0, 0, 0, 0, 0.5, 0, 0, 0),
+  sd.random.intercept = c(0.5, 0.5, 0.5, 0.5, 0.5, 0.75, 0.5, 0.5),
+  sd.error = c(1, 1, 1, 1, 1, 1, 0.75, 1),
+  lambda = c(0, 1, 1, 1, 1, 1, 1, 10)
+)
+parameters
+```
+
+# Estimation
+
+For each set of input parameters, the generation and estimation procedure is applied multiple times. Every run results in slightly different estimates but all methods should produce the same values. These are compared below.
+
+```{r}
+estimated.parameters <- parameters %>%
+  expand_grid(
+    run = seq(5)
+  ) %>%
+  reframe(
+    generate.data(
+      n.participants = n.participants,
+      n.measurements = n.measurements,
+      fixed.coefficient.1 = fixed.coefficient.1,
+      fixed.coefficient.2 = fixed.coefficient.2,
+      fixed.coefficient.3 = fixed.coefficient.3,
+      fixed.coefficient.4 = fixed.coefficient.4,
+      fixed.coefficient.5 = fixed.coefficient.5,
+      sd.random.intercept = sd.random.intercept,
+      sd.error = sd.error,
+      lambda = lambda
+    ) %>%
+      estimate.all.models.and.get.coefficients(),
+    .by = c(parameter.set, run)
+  )
+estimated.parameters
+```
+
+# Compare Estimates
+
+The output of the simulation study contains estimated parameters for all the included methods. These should all give the same result. An easy way to check this is to plot the estimates of two methods together, one on the x-axis and one on the y-axis. The points should fall on a 45-degree line. Let's first compare the methods from _nlme_ and _lme4_.
+
+```{r}
+# ggplot(
+#   mapping = aes(
+#     x = nlme,
+#     y = lme4
+#   ),
+#   data = estimated.parameters %>%
+#     select(-time) %>%
+#     pivot_longer(c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "fixed.coefficient.4", "fixed.coefficient.5", "sd.random.intercept", "sd.error")) %>%
+#     pivot_wider(names_from = "method"),
+#     alpha = 0.1
+# ) +
+#   geom_point() +
+#   geom_smooth(
+#     formula = y ~ x,
+#     method = "lm",
+#     col = "green"
+#   ) +
+#   geom_abline(
+#     intercept = 0,
+#     slope = 1
+#   ) +
+#   facet_grid(
+#     cols = vars(name),
+#     rows = vars(parameter.set),
+#     scales = "free"
+#   )
+```
+
+Let's now compare the methods from _nlme_ and _gamlss1_.
+
+```{r}
+# ggplot(
+#   mapping = aes(
+#     x = nlme,
+#     y = gamlss1
+#   ),
+#   data = estimated.parameters %>%
+#     select(-time) %>%
+#     pivot_longer(c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "fixed.coefficient.4", "fixed.coefficient.5", "sd.random.intercept", "sd.error")) %>%
+#     pivot_wider(names_from = "method"),
+#     alpha = 0.1
+# ) +
+#   geom_point() +
+#   geom_smooth(
+#     formula = y ~ x,
+#     method = "lm",
+#     col = "green"
+#   ) +
+#   geom_abline(
+#     intercept = 0,
+#     slope = 1
+#   ) +
+#   facet_grid(
+#     cols = vars(name),
+#     rows = vars(parameter.set),
+#     scales = "free"
+#   )
+```
+
+Let's now compare the methods from _nlme_ and _gamlss2_.
+
+```{r}
+# ggplot(
+#   mapping = aes(
+#     x = nlme,
+#     y = gamlss2
+#   ),
+#   data = estimated.parameters %>%
+#     select(-time) %>%
+#     pivot_longer(c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "fixed.coefficient.4", "fixed.coefficient.5", "sd.random.intercept", "sd.error")) %>%
+#     pivot_wider(names_from = "method"),
+#     alpha = 0.1
+# ) +
+#   geom_point() +
+#   geom_smooth(
+#     formula = y ~ x,
+#     method = "lm",
+#     col = "green"
+#   ) +
+#   geom_abline(
+#     intercept = 0,
+#     slope = 1
+#   ) +
+#   facet_grid(
+#     cols = vars(name),
+#     rows = vars(parameter.set),
+#     scales = "free"
+#   )
+```
+
+Let's now compare the methods from _optim_ and _gls_.
+
+```{r}
+ggplot(
+  mapping = aes(
+    x = optim,
+    y = gls
+  ),
+  data = estimated.parameters %>%
+    select(-computation.time) %>%
+    pivot_longer(c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "fixed.coefficient.4", "fixed.coefficient.5", "sd.random.intercept", "sd.error")) %>%
+    pivot_wider(names_from = "method"),
+    alpha = 0.1
+) +
+  geom_point() +
+  geom_smooth(
+    formula = y ~ x,
+    method = "lm",
+    col = "green"
+  ) +
+  geom_abline(
+    intercept = 0,
+    slope = 1
+  ) +
+  facet_grid(
+    cols = vars(name),
+    rows = vars(parameter.set),
+    scales = "free"
+  )
+```
+
+Let's now compare the methods from _gamlss2_ and _optim_.
+
+```{r}
+ggplot(
+  mapping = aes(
+    x = gamlss2,
+    y = optim
+  ),
+  data = estimated.parameters %>%
+    select(-computation.time) %>%
+    pivot_longer(c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "fixed.coefficient.4", "fixed.coefficient.5", "sd.random.intercept", "sd.error")) %>%
+    pivot_wider(names_from = "method"),
+    alpha = 0.1
+) +
+  geom_point() +
+  geom_smooth(
+    formula = y ~ x,
+    method = "lm",
+    col = "green"
+  ) +
+  geom_abline(
+    intercept = 0,
+    slope = 1
+  ) +
+  facet_grid(
+    cols = vars(name),
+    rows = vars(parameter.set),
+    scales = "free"
+  )
+```
+
+Finally, let's compare the methods from _gamlss2_ and _gls_.
+
+```{r}
+ggplot(
+  mapping = aes(
+    x = gamlss2,
+    y = gls
+  ),
+  data = estimated.parameters %>%
+    select(-computation.time) %>%
+    pivot_longer(c("fixed.coefficient.1", "fixed.coefficient.2", "fixed.coefficient.3", "fixed.coefficient.4", "fixed.coefficient.5", "sd.random.intercept", "sd.error")) %>%
+    pivot_wider(names_from = "method"),
+    alpha = 0.1
+) +
+  geom_point() +
+  geom_smooth(
+    formula = y ~ x,
+    method = "lm",
+    col = "green"
+  ) +
+  geom_abline(
+    intercept = 0,
+    slope = 1
+  ) +
+  facet_grid(
+    cols = vars(name),
+    rows = vars(parameter.set),
+    scales = "free"
+  )
+```
+
+All methods give the same result. Only the _optim_ method, which estimated the model using a custom likelihood function, gave slightly different result. This is probably due to the low resolution of the numerical integration used in this method, and not due to a fundamental difference in the model.
+
+# Compare Computation Time
+
+We have seen that all methods produce the same estimates. However, some methods are computationally faster than others. The table below provides the mean estimation time.
+
+```{r}
+estimated.parameters %>%
+  group_by(parameter.set, method) %>%
+  summarise(
+    computation.time = mean(computation.time),
+    .groups = "drop"
+  ) %>%
+  pivot_wider(
+    values_from = computation.time,
+    names_from = method
+  )
+```
+
+The computation times can also be plot as densities.
+
+```{r}
+ggplot() +
+  geom_density(
+    mapping = aes(
+      x = computation.time,
+      col = method
+    ),
+    data = estimated.parameters
+  ) +
+  facet_wrap(
+    facets = ~ method,
+    scales = "free_y"
+  )
+```
+
+# Visualise Curves
+
+```{r}
+ggplot() +
+  geom_line(
+    mapping = aes(
+      x = x,
+      y = y,
+      group = run
+    ),
+    data = estimated.parameters %>%
+      filter(!is.na(computation.time)) %>%
+      group_by(parameter.set, run, method) %>%
+      reframe(
+        x = seq(0, 1, 0.01),
+        y = c(bbase(x, xl = 0, xr = 1, nseg = 2, bdeg = 3) %*% c(fixed.coefficient.1, fixed.coefficient.2, fixed.coefficient.3, fixed.coefficient.4, fixed.coefficient.5))
+      ),
+    alpha = 0.4
+  ) +
+  geom_line(
+    mapping = aes(
+      x = x,
+      y = y
+    ),
+    data = parameters %>%
+      group_by(parameter.set) %>%
+      reframe(
+        x = seq(0, 1, 0.01),
+        y = c(bbase(x, xl = 0, xr = 1, nseg = 2, bdeg = 3) %*% c(fixed.coefficient.1, fixed.coefficient.2, fixed.coefficient.3, fixed.coefficient.4, fixed.coefficient.5))
+      ),
+    colour = "red"
+  ) +
+  facet_grid(
+    rows = vars(method),
+    cols = vars(parameter.set),
+    scales = "free"
+  ) +
+  labs(
+    x = "Exposure",
+    y = "Hazard rate"
+  )
+```

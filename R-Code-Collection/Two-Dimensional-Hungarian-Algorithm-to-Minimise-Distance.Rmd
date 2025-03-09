@@ -1,0 +1,83 @@
+---
+title: "Two-Dimensional Hungarian Algorithm to Minimise Distance"
+author: "Laurens Bogaardt"
+date: "2025-01-01"
+output:
+  html_document:
+    df_print: paged
+    fig_width: 10
+    fig.align: center
+    toc: true
+    toc_depth: 4
+    toc_float: true
+    theme: united
+    code_folding: show
+---
+
+<style>
+body{text-align: justify}
+</style>
+
+# Introduction
+
+https://en.wikipedia.org/wiki/Hungarian_algorithm
+
+```{r results = FALSE, message = FALSE, warning = FALSE}
+library(clue)
+library(fields)
+set.seed(123)
+```
+
+# One-Dimensional Case
+
+## Data
+
+```{r}
+vector.large <- runif(50)
+vector.small <- runif(10)
+```
+
+## Solution
+
+```{r}
+distances <- abs(outer(vector.small, vector.large, `-`))
+sol <- solve_LSAP(distances)
+```
+
+## Visualisation
+
+```{r}
+plot(vector.large, rep(0.1, length(vector.large)), col = "blue", xlim = c(0, 1), ylim = c(0, 1))       
+points(vector.small, rep(0.9, length(vector.small)), col = "red")
+segments(vector.large[sol], 0.1, vector.small, 0.9)
+```
+
+# Two-Dimensional Case
+
+## Data
+
+```{r}
+matrix.large <- data.frame(
+  x = runif(100),
+  y = runif(100)
+)
+matrix.small <- data.frame(
+  x = runif(10),
+  y = runif(10)
+)
+```
+
+## Solution
+
+```{r}
+distances <- rdist(matrix.small, matrix.large)
+sol <- solve_LSAP(distances)
+```
+
+## Visualisation
+
+```{r}
+plot(matrix.large$x, matrix.large$y, col = "blue")       
+points(matrix.small$x, matrix.small$y, col = "red")
+segments(matrix.small$x, matrix.small$y, matrix.large[sol, "x"], matrix.large[sol, "y"])
+```
