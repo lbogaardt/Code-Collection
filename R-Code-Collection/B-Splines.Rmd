@@ -20,6 +20,8 @@ body{text-align: justify}
 
 # Introduction
 
+This document examines B-splines and their properties. The document uses the packages _tidyverse_ and _splines_. We also set a seed to ensure every run of this document produces the same output.
+
 ```{r results = FALSE, message = FALSE, warning = FALSE}
 library(tidyverse)
 library(splines)
@@ -27,6 +29,10 @@ set.seed(123)
 ```
 
 # Functions
+
+This section contains various functions used to create B-splines.
+
+We start by defining a function which creates the locations of the internal knots of a B-spline, given the degrees of freedom and the degree of the spline.
 
 ```{r}
 evenly.spread.internal.knots <- function(df, degree) {
@@ -40,17 +46,20 @@ evenly.spread.internal.knots <- function(df, degree) {
 }
 ```
 
+We can also define a function which creates the locations of all knots of a B-spline, given the degrees of freedom and the degree of the spline.
+
 ```{r}
 evenly.spread.knots <- function(df, degree) {
-  step <- 1 / (df - degree)
-  if (step == 1) {
-    result <- c(rep(0, degree + 1), rep(1, degree + 1))
-  } else {
-    result <- c(rep(0, degree), seq(0, 1, 1 / (df - degree)), rep(1, degree))
-  }
+  result <- c(
+    rep(0, degree + 1),
+    evenly.spread.internal.knots(df, degree),
+    rep(1, degree + 1)
+  )
   return(result)
 }
 ```
+
+A B-spline is a weighted sum of various basis-splines. So we first  define a function which generates such a basis spline. This is done using a recursive algorithm (see https://en.wikipedia.org/wiki/B-spline).
 
 ```{r}
 basisSpline <- function(x, i, knots, degree) {
@@ -71,6 +80,8 @@ basisSpline <- function(x, i, knots, degree) {
 }
 ```
 
+The following function performs the weighted summation over the basis-splines to obtain the B-spline.
+
 ```{r}
 bSpline <- function(x, x.start, x.end, weights, degree) {
   x <- (x - x.start) / (x.end - x.start)
@@ -84,6 +95,8 @@ bSpline <- function(x, x.start, x.end, weights, degree) {
   return(result)
 }
 ```
+
+The following function performs the weighted summation of basis-splines in two dimensions to obtains a B-spline-surface.
 
 ```{r}
 bSpline2D <- function(x1, x1.start, x1.end, x2, x2.start, x2.end, weights, degree1, degree2) {
@@ -108,18 +121,16 @@ bSpline2D <- function(x1, x1.start, x1.end, x2, x2.start, x2.end, weights, degre
 # Bases Data
 
 ```{r}
-data <- tibble(
+bases.data <- tibble(
   df = seq(2, 6)
 ) %>%
   group_by(df) %>%
-  summarise(
-    degree = seq(df - 1),
-    .groups = "drop"
+  reframe(
+    degree = seq(df - 1)
   ) %>%
   group_by(df, degree) %>%
-  summarise(
-    i = seq(df),
-    .groups = "drop"
+  reframe(
+    i = seq(df)
   ) %>%
   group_by(df, degree, i) %>%
   expand_grid(
@@ -131,7 +142,7 @@ data <- tibble(
     y2 = c(bs(x = x, knots = evenly.spread.internal.knots(df, degree), df = df, degree = degree, intercept = TRUE, Boundary.knots = c(0, 1))[,i])
   ) %>%
   ungroup()
-data
+bases.data
 ```
 
 # Visualise Bases
@@ -144,7 +155,7 @@ ggplot() +
       y = y1,
       col = as.factor(i)
     ),
-    data = data
+    data = bases.data
   ) +
   geom_point(
     mapping = aes(
@@ -152,7 +163,7 @@ ggplot() +
       y = y2,
       col = as.factor(i)
     ),
-    data = data
+    data = bases.data
   ) +
   facet_grid(
     rows = vars(paste0("df: ", df)),
@@ -191,7 +202,7 @@ data.frame(
 
 ```{r}
 weights <- runif(9)
-data2 <- data %>%
+data2 <- bases.data %>%
   group_by(df, degree, x) %>%
   reframe(
     y1 = bSpline(x, 0, 1, weights[i], unique(degree)),

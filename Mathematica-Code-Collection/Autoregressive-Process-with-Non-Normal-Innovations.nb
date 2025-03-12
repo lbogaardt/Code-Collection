@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[     25945,        601]
-NotebookOptionsPosition[     24253,        564]
-NotebookOutlinePosition[     24673,        581]
-CellTagsIndexPosition[     24630,        578]
+NotebookDataLength[     27558,        641]
+NotebookOptionsPosition[     25496,        600]
+NotebookOutlinePosition[     25916,        617]
+CellTagsIndexPosition[     25873,        614]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -68,6 +68,17 @@ Cell["Initialisation", "Section",
   3.77839572217031*^9}},ExpressionUUID->"0bcc5949-a970-de48-acfc-\
 69ed65da4e6c"],
 
+Cell[TextData[{
+ "We start by importing the Mathematica Notebook ",
+ StyleBox["The-Sinh-ArcSinh-Family-of-Distributions.nb ",
+  FontSlant->"Italic"],
+ "in order to use the functions defined there to generate non-normally \
+distributed data."
+}], "Text",
+ CellChangeTimes->{{3.9507582371214485`*^9, 
+  3.9507583099901543`*^9}},ExpressionUUID->"2c3a77dc-d5eb-d04a-908c-\
+6b7d353c484d"],
+
 Cell[BoxData[
  RowBox[{
   RowBox[{"importPackage", "=", 
@@ -117,6 +128,15 @@ Cell["Autoregressive Process", "Section",
  CellChangeTimes->{{3.7783957100480323`*^9, 
   3.7783957147748623`*^9}},ExpressionUUID->"5f0bec14-dafc-ca4c-a18f-\
 89de4a7f4a74"],
+
+Cell["\<\
+Next, we define several functions which predict the moments of the \
+distribution of the output of an autoregressive process, given the moments of \
+the innovations.\
+\>", "Text",
+ CellChangeTimes->{{3.9507582371214485`*^9, 
+  3.950758381207735*^9}},ExpressionUUID->"c11105fc-ae61-4e4b-ba77-\
+6888bf7fbe30"],
 
 Cell[BoxData[{
  RowBox[{"processMeanFromInnovations", "=", 
@@ -195,6 +215,15 @@ Cell[BoxData[{
   3.778323524392433*^9}},
  CellLabel->"In[4]:=",ExpressionUUID->"9d5b70ba-6720-9442-be46-ea90ef67b94f"],
 
+Cell["\<\
+And we define several functions which give the moments of the innovations, \
+given the moments of the distribution of the output of the autoregressive \
+process.\
+\>", "Text",
+ CellChangeTimes->{{3.9507582371214485`*^9, 
+  3.950758423603737*^9}},ExpressionUUID->"61fdc616-5c56-9240-a78c-\
+0dd58a1770e7"],
+
 Cell[BoxData[{
  RowBox[{"innovationsMeanFromProcess", "=", 
   RowBox[{"Function", "[", 
@@ -269,6 +298,13 @@ Cell[BoxData[{
   3.7783198962871695`*^9, 3.778319937643035*^9}, {3.778323459605218*^9, 
   3.7783234911330194`*^9}},
  CellLabel->"In[8]:=",ExpressionUUID->"e6ad09c0-a94f-c54a-9d89-9ef23f43b9ca"],
+
+Cell["\<\
+These concepts are tested and visualised in the following table.\
+\>", "Text",
+ CellChangeTimes->{{3.9507582371214485`*^9, 
+  3.9507584672387657`*^9}},ExpressionUUID->"8fc42fb8-7db4-7c40-ad99-\
+cf11d955016f"],
 
 Cell[BoxData[
  RowBox[{"With", "[", 
@@ -587,20 +623,24 @@ Cell[1089, 34, 1496, 22, 143, "Text",ExpressionUUID->"ddeb7475-4ca9-e040-aa84-3c
 Cell[2588, 58, 162, 3, 28, "Input",ExpressionUUID->"aa0812a0-e810-7344-ac9e-b5d0ca41f922"],
 Cell[CellGroupData[{
 Cell[2775, 65, 160, 3, 66, "Section",ExpressionUUID->"0bcc5949-a970-de48-acfc-69ed65da4e6c"],
-Cell[2938, 70, 1126, 26, 66, "Input",ExpressionUUID->"ea2e3811-8223-bf47-892f-f23c0583e165"],
-Cell[4067, 98, 670, 12, 28, "Input",ExpressionUUID->"04b72697-4815-3c42-8e7e-a7c9a347441b"]
+Cell[2938, 70, 383, 9, 33, "Text",ExpressionUUID->"2c3a77dc-d5eb-d04a-908c-6b7d353c484d"],
+Cell[3324, 81, 1126, 26, 66, "Input",ExpressionUUID->"ea2e3811-8223-bf47-892f-f23c0583e165"],
+Cell[4453, 109, 670, 12, 28, "Input",ExpressionUUID->"04b72697-4815-3c42-8e7e-a7c9a347441b"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[4774, 115, 171, 3, 66, "Section",ExpressionUUID->"5f0bec14-dafc-ca4c-a18f-89de4a7f4a74"],
-Cell[4948, 120, 2498, 75, 101, "Input",ExpressionUUID->"9d5b70ba-6720-9442-be46-ea90ef67b94f",
+Cell[5160, 126, 171, 3, 66, "Section",ExpressionUUID->"5f0bec14-dafc-ca4c-a18f-89de4a7f4a74"],
+Cell[5334, 131, 317, 7, 33, "Text",ExpressionUUID->"c11105fc-ae61-4e4b-ba77-6888bf7fbe30"],
+Cell[5654, 140, 2498, 75, 101, "Input",ExpressionUUID->"9d5b70ba-6720-9442-be46-ea90ef67b94f",
  InitializationCell->True],
-Cell[7449, 197, 2514, 73, 101, "Input",ExpressionUUID->"e6ad09c0-a94f-c54a-9d89-9ef23f43b9ca",
+Cell[8155, 217, 313, 7, 33, "Text",ExpressionUUID->"61fdc616-5c56-9240-a78c-0dd58a1770e7"],
+Cell[8471, 226, 2514, 73, 101, "Input",ExpressionUUID->"e6ad09c0-a94f-c54a-9d89-9ef23f43b9ca",
  InitializationCell->True],
-Cell[9966, 272, 13491, 266, 332, "Input",ExpressionUUID->"a1cd547b-e01d-ad44-a226-94cb0aa44a53"]
+Cell[10988, 301, 218, 5, 33, "Text",ExpressionUUID->"8fc42fb8-7db4-7c40-ad99-cf11d955016f"],
+Cell[11209, 308, 13491, 266, 332, "Input",ExpressionUUID->"a1cd547b-e01d-ad44-a226-94cb0aa44a53"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[23494, 543, 210, 4, 66, "Section",ExpressionUUID->"6f4bb5b2-2c1c-2740-97c7-3300075cd33d"],
-Cell[23707, 549, 518, 11, 99, "Text",ExpressionUUID->"d2dfbbfe-d827-4f4e-9510-11d409623ab8"]
+Cell[24737, 579, 210, 4, 66, "Section",ExpressionUUID->"6f4bb5b2-2c1c-2740-97c7-3300075cd33d"],
+Cell[24950, 585, 518, 11, 99, "Text",ExpressionUUID->"d2dfbbfe-d827-4f4e-9510-11d409623ab8"]
 }, Open  ]]
 }, Open  ]]
 }
